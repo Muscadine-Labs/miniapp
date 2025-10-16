@@ -76,14 +76,14 @@ Muscadine Box is a **Farcaster Mini App** that enables users to earn yield on th
 - Migrate to v2 Vaults to be able to curate risk for all defi protocols to sustance best yield and risk. This will allow flexibility for vault to be available for years to come. 
 
 ### V1 Vaults (Q4 2024 - Q1 2025)
-- ✅ Complete functional vault implementation
-- ✅ Enhanced security audits and testing
-- ✅ Streamlined user onboarding flow
+- Complete functional vault implementation
+- Enhanced security audits and testing
+- Streamlined user onboarding flow
 
 ### Platform Improvements
-- 📊 **Better Statistics**: Advanced analytics dashboard with detailed interest tracking, historical performance, and yield optimization insights
-- 🎯 **Beginner-Friendly**: Simplified UI/UX, educational content, and guided tutorials for DeFi newcomers
-- 🔒 **Enhanced Security**: Multi-layer security protocols, and risk management tools
+- **Better Statistics**: Advanced analytics dashboard with detailed interest tracking, historical performance, and yield optimization insights
+- **Beginner-Friendly**: Simplified UI/UX, educational content, and guided tutorials for DeFi newcomers
+- **Enhanced Security**: Multi-layer security protocols, and risk management tools
 
 ### Long-term Vision
 Transform Muscadine Box into the go-to platform for secure, accessible DeFi and savings on Base network.
