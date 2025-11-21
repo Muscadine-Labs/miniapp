@@ -1,10 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 import Prism from './Prism';
 
 const HomePage: React.FC = () => {
+  useEffect(() => {
+    // Ensure ready() is called when this component mounts
+    // This is a backup in case the RootProvider call didn't work
+    try {
+      sdk.actions.ready();
+    } catch {
+      // Silently fail if SDK not available
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-full h-screen relative">

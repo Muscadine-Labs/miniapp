@@ -22,15 +22,26 @@ export function RootProvider({ children }: { children: ReactNode }) {
     // Call ready() immediately when app is ready to display
     // This dismisses the splash screen and shows the app content
     // Must be called as soon as possible to avoid showing splash screen too long
-    try {
-      sdk.actions.ready();
-    } catch {
-      // If SDK is not available (e.g., not in miniapp context), silently fail
-      // This allows the app to work in regular browser too
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Farcaster SDK not available (not in miniapp context)');
+    const callReady = () => {
+      try {
+        if (sdk && sdk.actions && typeof sdk.actions.ready === 'function') {
+          sdk.actions.ready();
+        }
+      } catch (error) {
+        // If SDK is not available (e.g., not in miniapp context), log in dev
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Farcaster SDK not available:', error);
+        }
       }
-    }
+    };
+
+    // Call immediately
+    callReady();
+    
+    // Also call after a short delay in case SDK needs time to initialize
+    const timeout = setTimeout(callReady, 100);
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   return (
