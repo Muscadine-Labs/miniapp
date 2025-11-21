@@ -2,7 +2,38 @@ import { NextResponse } from "next/server";
 import { minikitConfig } from "../../../minikit.config";
 
 export async function GET() {
-  const manifest = {
+  // Build manifest according to Base documentation
+  // https://docs.base.org/mini-apps/core-concepts/manifest
+  const manifest: {
+    accountAssociation: {
+      header: string;
+      payload: string;
+      signature: string;
+    };
+    baseBuilder: {
+      ownerAddress: string;
+    };
+    miniapp: {
+      version: string;
+      name: string;
+      homeUrl: string;
+      iconUrl: string;
+      splashImageUrl: string;
+      splashBackgroundColor: string;
+      subtitle: string;
+      description: string;
+      screenshotUrls: string[];
+      primaryCategory: string;
+      tags: string[];
+      heroImageUrl: string;
+      tagline: string;
+      ogTitle: string;
+      ogDescription: string;
+      ogImageUrl: string;
+      noindex?: boolean;
+      webhookUrl?: string;
+    };
+  } = {
     accountAssociation: {
       header: "",
       payload: "",
@@ -18,12 +49,11 @@ export async function GET() {
       iconUrl: minikitConfig.frame.iconUrl,
       splashImageUrl: minikitConfig.frame.splashImageUrl,
       splashBackgroundColor: minikitConfig.frame.splashBackgroundColor,
-      webhookUrl: minikitConfig.frame.webhookUrl,
       subtitle: minikitConfig.frame.subtitle,
       description: minikitConfig.frame.description,
-      screenshotUrls: minikitConfig.frame.screenshotUrls,
+      screenshotUrls: [...minikitConfig.frame.screenshotUrls],
       primaryCategory: minikitConfig.frame.primaryCategory,
-      tags: minikitConfig.frame.tags,
+      tags: [...minikitConfig.frame.tags],
       heroImageUrl: minikitConfig.frame.heroImageUrl,
       tagline: minikitConfig.frame.tagline,
       ogTitle: minikitConfig.frame.ogTitle,
@@ -33,6 +63,11 @@ export async function GET() {
     }
   };
 
-  return NextResponse.json(manifest);
+  return NextResponse.json(manifest, {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 }
 

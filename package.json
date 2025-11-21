@@ -17,7 +17,6 @@
     "@coinbase/onchainkit": "^1.1.1",
     "@farcaster/miniapp-sdk": "^0.1.8",
     "@tanstack/react-query": "^5.81.5",
-    "@walletconnect/modal": "^2.7.0",
     "axios": "^1.12.2",
     "next": "15.3.4",
     "ogl": "^1.0.11",
@@ -38,7 +37,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/testing-library__jest-dom": "^6.0.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
@@ -48,5 +46,16 @@
     "tailwindcss": "^4.1.14",
     "typescript": "^5",
     "vitest": "^2.1.4"
+  },
+  "overrides": {
+    "valtio": {
+      "use-sync-external-store": "^1.2.2"
+    },
+    "@walletconnect/modal-core": {
+      "valtio": {
+        "use-sync-external-store": "^1.2.2"
+      }
+    },
+    "use-sync-external-store": "^1.2.2"
   }
 }
