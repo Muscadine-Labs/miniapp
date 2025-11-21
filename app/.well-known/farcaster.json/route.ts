@@ -46,9 +46,13 @@ export async function GET() {
       webhookUrl: `${baseUrl}/api/webhook`,
       subtitle: minikitConfig.miniapp.subtitle,
       description: minikitConfig.miniapp.description,
-      screenshotUrls: [`${baseUrl}/screenshot.png`],
+      screenshotUrls: [
+        `${baseUrl}/screenshot.png`,
+        `${baseUrl}/screenshot2.png`,
+        `${baseUrl}/screenshot3.png`
+      ],
       primaryCategory: minikitConfig.miniapp.primaryCategory,
-      tags: minikitConfig.miniapp.tags,
+      tags: ["defi", "lending", "morpho", "finance", "earn"],
       heroImageUrl: `${baseUrl}/hero.png`,
       tagline: minikitConfig.miniapp.tagline,
       ogTitle: minikitConfig.miniapp.ogTitle,
