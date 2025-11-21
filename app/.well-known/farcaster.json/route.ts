@@ -10,12 +10,9 @@ import { minikitConfig } from "../../../minikit.config";
  * - miniapp: MiniApp metadata and configuration
  */
 export async function GET() {
-  // Ensure URL always has https:// protocol
-  const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
-  let baseUrl = ROOT_URL;
-  if (baseUrl && !baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
+  // Always use production domain for manifest URLs (required by Farcaster)
+  // Never use Vercel preview URLs as they're not valid for manifest validation
+  const baseUrl = "https://miniapp.muscadine.io";
 
   const manifest = {
     accountAssociation: {
@@ -49,14 +46,14 @@ export async function GET() {
       webhookUrl: `${baseUrl}/api/webhook`,
       subtitle: minikitConfig.miniapp.subtitle,
       description: minikitConfig.miniapp.description,
-      screenshotUrls: minikitConfig.miniapp.screenshotUrls,
+      screenshotUrls: [`${baseUrl}/screenshot.png`],
       primaryCategory: minikitConfig.miniapp.primaryCategory,
       tags: minikitConfig.miniapp.tags,
-      heroImageUrl: minikitConfig.miniapp.heroImageUrl,
+      heroImageUrl: `${baseUrl}/hero.png`,
       tagline: minikitConfig.miniapp.tagline,
       ogTitle: minikitConfig.miniapp.ogTitle,
       ogDescription: minikitConfig.miniapp.ogDescription,
-      ogImageUrl: minikitConfig.miniapp.ogImageUrl
+      ogImageUrl: `${baseUrl}/hero.png`
     }
   };
 
