@@ -40,7 +40,7 @@ export async function GET() {
       signature: ""
     },
     baseBuilder: {
-      ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"
+      ownerAddress: minikitConfig.baseBuilder.ownerAddress
     },
     miniapp: {
       version: minikitConfig.frame.version,
