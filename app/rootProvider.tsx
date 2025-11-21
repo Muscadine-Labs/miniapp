@@ -24,7 +24,7 @@ export function RootProvider({ children }: { children: ReactNode }) {
     // Must be called as soon as possible to avoid showing splash screen too long
     try {
       sdk.actions.ready();
-    } catch (error) {
+    } catch {
       // If SDK is not available (e.g., not in miniapp context), silently fail
       // This allows the app to work in regular browser too
       if (process.env.NODE_ENV === 'development') {
