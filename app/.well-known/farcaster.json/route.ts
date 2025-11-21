@@ -52,7 +52,7 @@ export async function GET() {
         `${baseUrl}/screenshot3.png`
       ],
       primaryCategory: minikitConfig.miniapp.primaryCategory,
-      tags: ["defi", "lending", "morpho", "finance", "earn"],
+      tags: ["defi", "lending", "yield", "base", "earn"],
       heroImageUrl: `${baseUrl}/hero.png`,
       tagline: minikitConfig.miniapp.tagline,
       ogTitle: minikitConfig.miniapp.ogTitle,
