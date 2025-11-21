@@ -7,18 +7,23 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
+  const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
+  
   return {
     title: minikitConfig.frame.name,
     description: minikitConfig.frame.description,
     other: {
-      "fc:frame": JSON.stringify({
-        version: minikitConfig.frame.version,
+      "fc:miniapp": JSON.stringify({
+        version: "next",
         imageUrl: minikitConfig.frame.heroImageUrl,
         button: {
           title: `Launch ${minikitConfig.frame.name}`,
           action: {
-            name: `Launch ${minikitConfig.frame.name}`,
-            type: "launch_frame",
+            type: "launch_miniapp",
+            name: minikitConfig.frame.name,
+            url: ROOT_URL,
+            splashImageUrl: minikitConfig.frame.splashImageUrl,
+            splashBackgroundColor: minikitConfig.frame.splashBackgroundColor,
           },
         },
       }),

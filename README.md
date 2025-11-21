@@ -2,7 +2,7 @@
 
 DeFi lending platform on Base. Farcaster Mini App.
 
-**Live**: [app.muscadine.box](https://app.muscadine.box)
+**Live**: [miniapp.muscadine.io](https://miniapp.muscadine.io)
 
 ## Stack
 

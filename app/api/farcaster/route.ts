@@ -71,16 +71,16 @@ export async function GET() {
     },
     baseBuilder: {
       ...minikitConfig.baseBuilder,
-      allowedDomains: ["app.muscadine.box", "vite.app.muscadine.box", "vercel.app.muscadine.box"]
+      allowedDomains: ["miniapp.muscadine.io", "*.muscadine.io"]
     },
     creator: {
       name: "Muscadine Team",
-      url: "https://app.muscadine.box"
+      url: "https://miniapp.muscadine.io"
     },
     license: "MIT",
     policy: {
-      privacy: "https://app.muscadine.box/privacy",
-      terms: "https://app.muscadine.box/terms"
+      privacy: "https://miniapp.muscadine.io/privacy",
+      terms: "https://miniapp.muscadine.io/terms"
     }
   }, {
     headers: {

@@ -1,9 +1,10 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { base } from "wagmi/chains";
 import { OnchainKitProvider } from "@coinbase/onchainkit";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { wagmiConfig } from "./lib/wagmi";
 import "@coinbase/onchainkit/styles.css";
 
@@ -17,6 +18,10 @@ const queryClient = new QueryClient({
 });
 
 export function RootProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    sdk.actions.ready();
+  }, []);
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
@@ -26,14 +31,14 @@ export function RootProvider({ children }: { children: ReactNode }) {
           config={{
             appearance: {
               name: 'Muscadine DeFi',
-              logo: 'https://app.muscadine.box/icon.png',
+              logo: 'https://miniapp.muscadine.io/icon.png',
               mode: 'light',
               theme: 'default',
             },
             wallet: {
               display: 'modal',
-              termsUrl: 'https://app.muscadine.box/terms',
-              privacyUrl: 'https://app.muscadine.box/privacy',
+              termsUrl: 'https://miniapp.muscadine.io/terms',
+              privacyUrl: 'https://miniapp.muscadine.io/privacy',
               supportedWallets: {
                 rabby: true,
                 trust: true,

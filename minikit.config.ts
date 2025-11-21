@@ -1,4 +1,4 @@
-const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://app.muscadine.box";
+const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
 
 /**
  * MiniApp configuration object. Must follow the Farcaster MiniApp specification.
@@ -26,6 +26,6 @@ export const minikitConfig = {
     ogImageUrl: `${ROOT_URL}/hero.png`,
   },
   baseBuilder: {
-    allowedAddresses: ["0x5332b9458D975Cd155C67EdC54C1AD0262336f3f"]
+    ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"
   },
 } as const;

@@ -1,5 +1,5 @@
 {
-  "name": "app.muscadine.box",
+  "name": "miniapp",
   "version": "0.1.0",
   "description": "DeFi lending platform with OnchainKit integration for Morpho Protocol v1 vaults on Base network",
   "private": true,
