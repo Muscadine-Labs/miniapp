@@ -7,10 +7,8 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
+          // Removed X-Frame-Options: DENY to allow MiniApp embedding
+          // MiniApps need to be embeddable in iframes for Coinbase Wallet
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',

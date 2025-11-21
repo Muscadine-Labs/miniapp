@@ -14,7 +14,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@coinbase/onchainkit": "^1.1.1",
+    "@coinbase/onchainkit": "^1.1.2",
     "@farcaster/miniapp-sdk": "^0.2.0",
     "@tanstack/react-query": "^5.81.5",
     "axios": "^1.12.2",
@@ -24,7 +24,7 @@
     "react-dom": "^19.0.0",
     "react-error-boundary": "^6.0.0",
     "viem": "^2.31.6",
-    "wagmi": "^2.16.3"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -56,6 +56,7 @@
         "use-sync-external-store": "^1.2.2"
       }
     },
-    "use-sync-external-store": "^1.2.2"
+    "use-sync-external-store": "^1.2.2",
+    "@paulmillr/qr": "npm:qr@^0.5.2"
   }
 }
