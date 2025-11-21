@@ -1,3 +1,5 @@
+import { minikitConfig } from "../../../../minikit.config";
+
 export async function GET() {
   // Ensure URL always has https:// protocol
   let baseUrl = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
@@ -6,56 +8,21 @@ export async function GET() {
   if (baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
-  
+
+  // Base MiniApp manifest structure as per Base documentation
+  // https://docs.base.org/mini-apps/quickstart/create-new-miniapp
   const manifest = {
-    version: "1",
-    name: "Muscadine Earn",
-    subtitle: "DeFi Lending Platform",
-    description: "Earn interest on your crypto",
-    screenshotUrls: [`${baseUrl}/screenshot.png`],
-    iconUrl: `${baseUrl}/icon.png`,
-    splashImageUrl: `${baseUrl}/splash.png`,
-    splashBackgroundColor: "#000000",
-    homeUrl: baseUrl,
-    webhookUrl: `${baseUrl}/api/webhook`,
-    primaryCategory: "finance",
-    tags: ["defi", "lending", "morpho", "base"],
-    heroImageUrl: `${baseUrl}/hero.png`,
-    tagline: "Lend and earn with confidence",
-    ogTitle: "Muscadine DeFi Lending",
-    ogDescription: "Earn interest on your crypto",
-    ogImageUrl: `${baseUrl}/hero.png`,
-    framelink: baseUrl,
-    accountAssociation: {
-      type: "fid",
-      fid: "536123456789"
-    },
+    accountAssociation: minikitConfig.accountAssociation,
     miniapp: {
-      version: "1.0.0",
-      platform: "web",
-      supportedChains: ["base"],
-      features: ["wallet", "defi", "lending", "swapping"],
-      permissions: ["wallet_access", "transaction_signing"],
-      capabilities: {
-        wallet: true,
-        transactions: true,
-        defi: true,
-        contract_interaction: true,
-        asset_storage: true
-      },
-      apis: {
-        blockchain: "base",
-        connect: ["wallet", "web3"],
-        transaction: ["send", "sign", "delegate"]
-      },
-      security: {
-        sandbox: true,
-        permissions: ["cross_origin"]
-      }
-    },
-    baseBuilder: {
-      ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0",
-      allowedDomains: [baseUrl.replace("https://", ""), "*.muscadine.io"]
+      ...minikitConfig.miniapp,
+      // Ensure URLs use the current baseUrl
+      screenshotUrls: [`${baseUrl}/screenshot.png`],
+      iconUrl: `${baseUrl}/icon.png`,
+      splashImageUrl: `${baseUrl}/splash.png`,
+      heroImageUrl: `${baseUrl}/hero.png`,
+      ogImageUrl: `${baseUrl}/hero.png`,
+      homeUrl: baseUrl,
+      webhookUrl: `${baseUrl}/api/webhook`,
     }
   };
 

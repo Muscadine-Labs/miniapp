@@ -16,20 +16,20 @@ export async function generateMetadata(): Promise<Metadata> {
   }
   
   return {
-    title: minikitConfig.frame.name,
-    description: minikitConfig.frame.description,
+    title: minikitConfig.miniapp.name,
+    description: minikitConfig.miniapp.description,
     other: {
       "fc:miniapp": JSON.stringify({
         version: "next",
-        imageUrl: minikitConfig.frame.heroImageUrl,
+        imageUrl: minikitConfig.miniapp.heroImageUrl,
         button: {
-          title: `Launch ${minikitConfig.frame.name}`,
+          title: `Launch ${minikitConfig.miniapp.name}`,
           action: {
             type: "launch_miniapp",
-            name: minikitConfig.frame.name,
+            name: minikitConfig.miniapp.name,
             url: baseUrl,
-            splashImageUrl: minikitConfig.frame.splashImageUrl,
-            splashBackgroundColor: minikitConfig.frame.splashBackgroundColor,
+            splashImageUrl: minikitConfig.miniapp.splashImageUrl,
+            splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,
           },
         },
       }),

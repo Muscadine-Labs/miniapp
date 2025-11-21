@@ -1,12 +1,17 @@
 const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
 
 /**
- * MiniApp configuration object. Must follow the Farcaster MiniApp specification.
+ * MiniApp configuration object. Must follow the Base MiniApp specification.
  *
- * @see {@link https://miniapps.farcaster.xyz/docs/guides/publishing}
+ * @see {@link https://docs.base.org/mini-apps/quickstart/create-new-miniapp}
  */
 export const minikitConfig = {
-  frame: {
+  accountAssociation: {
+    header: "",
+    payload: "",
+    signature: ""
+  },
+  miniapp: {
     version: "1",
     name: "Muscadine Earn",
     subtitle: "DeFi Lending Platform",
