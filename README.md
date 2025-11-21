@@ -7,9 +7,9 @@ DeFi lending platform on Base. Farcaster Mini App.
 ## Stack
 
 - Next.js 15.3.4 + TypeScript
-- OnchainKit 1.1.1
-- Wagmi 2.16.3 + Viem 2.31.6
-- Farcaster MiniKit 0.1.8
+- OnchainKit 1.1.2
+- Wagmi 2.19.5 + Viem 2.31.6
+- Farcaster MiniKit 0.2.0
 
 ## Vaults
 
@@ -24,9 +24,14 @@ All ERC-4626 on Morpho Protocol v1 (Base).
 ```bash
 npm install
 cp .env.example .env.local
-# Add NEXT_PUBLIC_ONCHAINKIT_API_KEY
+# Add your NEXT_PUBLIC_ONCHAINKIT_API_KEY to .env.local
+# Get your API key from: https://portal.cdp.coinbase.com/products/onchainkit
 npm run dev
 ```
+
+The app will be available at `http://localhost:3000`
+
+**Production URL**: [https://miniapp.muscadine.io](https://miniapp.muscadine.io)
 
 ## Features
 
@@ -42,6 +47,15 @@ npm run dev
 npm run build
 npm start
 ```
+
+### Environment Variables
+
+For production deployment, set these environment variables:
+
+- `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - Required: Your Coinbase OnchainKit API key
+- `NEXT_PUBLIC_URL` - Optional: Your production URL (defaults to `https://miniapp.muscadine.io`)
+
+**Production URL**: [https://miniapp.muscadine.io](https://miniapp.muscadine.io)
 
 ## Project Structure
 
@@ -68,7 +82,7 @@ Muscadine Box is a **Farcaster Mini App** that enables users to earn yield on th
 - **Calculates** interest earned using ERC-4626 standards
 - **Fetches** live token prices from CoinGecko API
 - **Provides** secure, non-custodial access to DeFi yields
-- take 1% preformance fee off of yield. 
+- **Takes** 1% performance fee off of yield 
 
 ## Future Plans
 

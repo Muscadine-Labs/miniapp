@@ -1,12 +1,8 @@
-import { minikitConfig } from "../../../minikit.config";
-
 export async function GET() {
-  // Return the complete manifest as required by Base MiniApp specification
-  // This includes accountAssociation, miniapp, and baseBuilder sections
   const manifest = {
-    accountAssociation: minikitConfig.accountAssociation,
-    miniapp: minikitConfig.miniapp,
-    baseBuilder: minikitConfig.baseBuilder,
+    baseBuilder: {
+      ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"
+    }
   };
 
   return Response.json(manifest);
