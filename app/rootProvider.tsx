@@ -19,7 +19,18 @@ const queryClient = new QueryClient({
 
 export function RootProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
-    sdk.actions.ready();
+    // Call ready() immediately when app is ready to display
+    // This dismisses the splash screen and shows the app content
+    // Must be called as soon as possible to avoid showing splash screen too long
+    try {
+      sdk.actions.ready();
+    } catch (error) {
+      // If SDK is not available (e.g., not in miniapp context), silently fail
+      // This allows the app to work in regular browser too
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Farcaster SDK not available (not in miniapp context)');
+      }
+    }
   }, []);
 
   return (
