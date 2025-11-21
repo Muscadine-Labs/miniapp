@@ -7,7 +7,13 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
+  // Ensure URL always has https:// protocol
+  let baseUrl = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
+  
+  // If VERCEL_URL is set, it doesn't include protocol, so add it
+  if (baseUrl && !baseUrl.startsWith("http")) {
+    baseUrl = `https://${baseUrl}`;
+  }
   
   return {
     title: minikitConfig.frame.name,
@@ -21,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
           action: {
             type: "launch_miniapp",
             name: minikitConfig.frame.name,
-            url: ROOT_URL,
+            url: baseUrl,
             splashImageUrl: minikitConfig.frame.splashImageUrl,
             splashBackgroundColor: minikitConfig.frame.splashBackgroundColor,
           },
