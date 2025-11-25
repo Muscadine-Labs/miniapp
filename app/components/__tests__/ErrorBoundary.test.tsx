@@ -163,7 +163,8 @@ describe('ErrorBoundary', () => {
   });
 
   describe('Error logging', () => {
-    it('logs errors to console in componentDidCatch', () => {
+    it('logs errors to console in componentDidCatch (development mode)', () => {
+      vi.stubEnv('NODE_ENV', 'development');
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       render(
@@ -179,6 +180,28 @@ describe('ErrorBoundary', () => {
       );
 
       consoleErrorSpy.mockRestore();
+      vi.unstubAllEnvs();
+    });
+
+    it('does not log errors to console in production mode', () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      // console.error should not be called in production
+      expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+        'ErrorBoundary caught an error:',
+        expect.any(Error),
+        expect.any(Object)
+      );
+
+      consoleErrorSpy.mockRestore();
+      vi.unstubAllEnvs();
     });
   });
 

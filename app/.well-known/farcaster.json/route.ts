@@ -1,14 +1,3 @@
-import { minikitConfig } from "../../../minikit.config";
-
-/**
- * Manifest endpoint for Base MiniApp
- * @see https://docs.base.org/mini-apps/quickstart/migrate-existing-apps
- * 
- * The manifest must include three sections:
- * - accountAssociation: Domain ownership verification
- * - baseBuilder: Base Build account connection
- * - frame: MiniApp metadata and configuration
- */
 export async function GET() {
   // All URLs must use miniapp.muscadine.io
   const baseUrl = "https://miniapp.muscadine.io";
@@ -21,16 +10,16 @@ export async function GET() {
     },
     frame: {
       version: "1",
-      name: minikitConfig.miniapp.name,
-      iconUrl: minikitConfig.miniapp.iconUrl,
-      homeUrl: minikitConfig.miniapp.homeUrl,
-      imageUrl: minikitConfig.miniapp.ogImageUrl, // 1200x630px PNG for rich embeds
-      splashImageUrl: minikitConfig.miniapp.splashImageUrl,
-      splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,
-      description: minikitConfig.miniapp.description,
-      ogTitle: minikitConfig.miniapp.ogTitle,
-      ogDescription: minikitConfig.miniapp.ogDescription,
-      ogImageUrl: minikitConfig.miniapp.ogImageUrl,
+      name: "Muscadine",
+      iconUrl: `${baseUrl}/icon.png`,
+      homeUrl: baseUrl,
+      imageUrl: `${baseUrl}/og-image.png`, // 1200x630px PNG for rich embeds
+      splashImageUrl: `${baseUrl}/splash.png`,
+      splashBackgroundColor: "#000000",
+      description: "Earn interest on your crypto",
+      ogTitle: "Muscadine Lending",
+      ogDescription: "Earn interest on your crypto",
+      ogImageUrl: `${baseUrl}/og-image.png`, // 1200x630px PNG (1.91:1 aspect ratio)
       requiredCapabilities: [
         "actions.ready",
         "actions.openMiniApp",
@@ -42,19 +31,13 @@ export async function GET() {
       ],
       canonicalDomain: baseUrl,
       noindex: false,
-      tags: minikitConfig.miniapp.tags,
-      primaryCategory: minikitConfig.miniapp.primaryCategory
+      tags: ["defi", "lending", "yield", "base", "earn"],
+      primaryCategory: "finance"
     },
     baseBuilder: {
-      allowedAddresses: [minikitConfig.baseBuilder.ownerAddress],
-      allowedDomains: ["miniapp.muscadine.io", "*.muscadine.io"]
+      allowedAddresses: ["0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"]
     }
   };
 
-  return Response.json(config, {
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=3600",
-    },
-  });
+  return Response.json(config);
 }

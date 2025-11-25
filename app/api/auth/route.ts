@@ -51,7 +51,10 @@ function getUrlHost(request: NextRequest) {
       const url = new URL(origin);
       return url.host;
     } catch (error) {
-      console.warn("Invalid origin header:", origin, error);
+      // Invalid origin header - log in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Invalid origin header:", origin, error);
+      }
     }
   }
 

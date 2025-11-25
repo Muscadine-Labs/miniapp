@@ -41,8 +41,6 @@ export function useVaultHistory(
 
     async function fetchHistory() {
       try {
-        console.log(`[VaultHistory] Fetching history for vault ${vaultAddress}, user ${userAddress}`);
-        console.log(`[VaultHistory] Token price: $${tokenPriceUSD}, Decimals: ${decimals}, Current balance: $${currentBalance}`);
 
         // Deposit event: event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)
         const depositLogs = await publicClient!.getLogs({
@@ -66,16 +64,12 @@ export function useVaultHistory(
           toBlock: 'latest',
         });
 
-        console.log(`[VaultHistory] ${vaultAddress} - Found ${depositLogs.length} deposits, ${withdrawLogs.length} withdrawals`);
-        console.log(`[VaultHistory] Deposit logs:`, depositLogs);
-        console.log(`[VaultHistory] Withdraw logs:`, withdrawLogs);
 
         // Calculate total deposited (in USD)
         const totalDeposited = depositLogs.reduce((sum, log) => {
           const assets = log.args.assets as bigint;
           const tokenAmount = Number(formatUnits(assets, decimals));
           const usdAmount = tokenAmount * tokenPriceUSD;
-          console.log(`[VaultHistory] Deposit: ${assets.toString()} raw -> ${tokenAmount} tokens -> $${usdAmount.toFixed(2)} USD`);
           return sum + usdAmount;
         }, 0);
 
@@ -84,7 +78,6 @@ export function useVaultHistory(
           const assets = log.args.assets as bigint;
           const tokenAmount = Number(formatUnits(assets, decimals));
           const usdAmount = tokenAmount * tokenPriceUSD;
-          console.log(`[VaultHistory] Withdraw: ${assets.toString()} raw -> ${tokenAmount} tokens -> $${usdAmount.toFixed(2)} USD`);
           return sum + usdAmount;
         }, 0);
 
@@ -94,8 +87,6 @@ export function useVaultHistory(
         // Interest earned = current balance - net deposits
         const interestEarned = Math.max(0, currentBalance - netDeposits);
 
-        console.log(`[VaultHistory] ${vaultAddress} - Total Deposited: ${totalDeposited}, Total Withdrawn: ${totalWithdrawn}, Net: ${netDeposits}, Current Balance: ${currentBalance}, Interest: ${interestEarned}`);
-
         setHistory({
           totalDeposited,
           totalWithdrawn,
@@ -104,7 +95,10 @@ export function useVaultHistory(
           isLoading: false,
         });
       } catch (error) {
-        console.error('Error fetching vault history:', error);
+        // Error fetching vault history - fail silently in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching vault history:', error);
+        }
         setHistory({
           totalDeposited: 0,
           totalWithdrawn: 0,

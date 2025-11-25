@@ -43,11 +43,8 @@ const Prism: React.FC<PrismProps> = ({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
-      console.log('Prism: No container ref found');
       return;
     }
-    
-    console.log('Prism: Initializing WebGL component...');
 
     const H = Math.max(0.001, height);
     const BW = Math.max(0.001, baseWidth);
@@ -75,7 +72,6 @@ const Prism: React.FC<PrismProps> = ({
       antialias: false
     });
     const gl = renderer.gl;
-    console.log('Prism: WebGL context created:', gl);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);

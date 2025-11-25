@@ -82,13 +82,7 @@ class DEXService {
       
       const formattedAmount = parseUnits(amount, fromDecimals).toString();
 
-      console.log('Getting quote from params:', {
-        fromTokenAddress,
-        toTokenAddress,
-        formattedAmount,
-        slippage,
-        chainId
-      });
+      // Getting quote from 1inch API
 
       // Get swap quote from 1inch
       const response = await axios.get(`${baseUrl}/${chainId}/quote`, {
@@ -103,16 +97,19 @@ class DEXService {
       });
 
       if (response.status !== 200) {
-        console.error('1inch API error:', response.statusText);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('1inch API error:', response.statusText);
+        }
         return null;
       }
 
       const data = response.data;
-      console.log('1inch quote API response:', { data });
       
       // Validate essential response fields
       if (!data || !data.toAmount) {
-        console.error('Invalid quote response format:', data);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Invalid quote response format:', data);
+        }
         return null;
       }
       
@@ -125,7 +122,9 @@ class DEXService {
         slippagePercentage: slippage.toString()
       };
     } catch (error) {
-      console.error('Error getting 1inch quote:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error getting 1inch quote:', error);
+      }
       return null;
     }
   }
@@ -154,14 +153,7 @@ class DEXService {
       
       const formattedAmount = parseUnits(amount, decimals).toString();
 
-      console.log('Getting swap transaction from params:', {
-        fromTokenAddress,
-        toTokenAddress,
-        formattedAmount,
-        fromAddress,
-        slippage,
-        chainId
-      });
+      // Getting swap transaction from 1inch API
 
       // Get swap transaction data from 1inch
       const response = await axios.get(`${baseUrl}/${chainId}/swap`, {
@@ -177,16 +169,19 @@ class DEXService {
       });
 
       if (response.status !== 200) {
-        console.error('1inch swap transaction error:', response.statusText);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('1inch swap transaction error:', response.statusText);
+        }
         return null;
       }
 
       const data = response.data;
-      console.log('1inch API response:', { data, fullResponse: response.data });
       
       // Validate that the transaction response contains the required fields
       if (!data || !data.tx || !data.tx.to || !data.tx.data) {
-        console.error('Invalid 1inch API response format:', data);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Invalid 1inch API response format:', data);
+        }
         return null;
       }
       
@@ -198,7 +193,9 @@ class DEXService {
         gasPrice: data.tx.gasPrice
       };
     } catch (error) {
-      console.error('Error getting swap transaction:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error getting swap transaction:', error);
+      }
       return null;
     }
   }

@@ -32,7 +32,10 @@ export function useTokenPrices(): TokenPrices {
           isLoading: false,
         });
       } catch (error) {
-        console.error('Error fetching token prices:', error);
+        // Error fetching token prices - fail silently in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching token prices:', error);
+        }
         setPrices({
           usdc: 1,
           cbbtc: 0,
