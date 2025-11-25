@@ -35,6 +35,7 @@ export async function GET() {
     ogTitle: minikitConfig.miniapp.ogTitle,
     ogDescription: minikitConfig.miniapp.ogDescription,
     ogImageUrl: minikitConfig.miniapp.ogImageUrl,
+    noindex: false,
     framelink: minikitConfig.miniapp.homeUrl,
     accountAssociation: {
       header: "eyJmaWQiOjIwNjQzNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDUzNTBFMjQ5M0ZFZmEwRGJlRTY0ZTliYWM3MGVGNTUzNjk1MWRkMjQifQ",
@@ -52,7 +53,7 @@ export async function GET() {
       description: minikitConfig.miniapp.description,
       iconUrl: minikitConfig.miniapp.iconUrl,
       homeUrl: minikitConfig.miniapp.homeUrl,
-      imageUrl: minikitConfig.miniapp.heroImageUrl,
+      imageUrl: minikitConfig.miniapp.ogImageUrl, // 1200x630px PNG for rich embeds
       buttonTitle: `Launch ${minikitConfig.miniapp.name}`,
       splashImageUrl: minikitConfig.miniapp.splashImageUrl,
       splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,

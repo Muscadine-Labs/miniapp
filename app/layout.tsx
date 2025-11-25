@@ -19,10 +19,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: minikitConfig.miniapp.name,
     description: minikitConfig.miniapp.description,
+    openGraph: {
+      title: minikitConfig.miniapp.ogTitle,
+      description: minikitConfig.miniapp.ogDescription,
+      images: [minikitConfig.miniapp.ogImageUrl],
+      url: baseUrl,
+    },
     other: {
-      "fc:miniapp": JSON.stringify({
+      // Required for rich embed rendering when sharing Mini App URLs
+      "fc:frame": JSON.stringify({
         version: "next",
-        imageUrl: minikitConfig.miniapp.heroImageUrl,
+        imageUrl: minikitConfig.miniapp.ogImageUrl, // 1200x630px PNG for embeds
         button: {
           title: `Launch ${minikitConfig.miniapp.name}`,
           action: {

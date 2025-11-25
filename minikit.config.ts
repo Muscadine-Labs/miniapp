@@ -24,12 +24,12 @@ export const minikitConfig = {
     homeUrl: ROOT_URL,
     webhookUrl: `${ROOT_URL}/api/webhook`,
     primaryCategory: "finance",
-    tags: ["defi", "lending", "morpho", "base"],
+    tags: ["defi", "lending", "yield", "base", "earn"],
     heroImageUrl: `${ROOT_URL}/hero.png`,
     tagline: "Lend and earn with confidence",
     ogTitle: "Muscadine DeFi Lending",
     ogDescription: "Earn interest on your crypto",
-    ogImageUrl: `${ROOT_URL}/hero.png`,
+    ogImageUrl: `${ROOT_URL}/og-image.png`, // Must be 1200x630px PNG (1.91:1 aspect ratio)
   },
   baseBuilder: {
     ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"
