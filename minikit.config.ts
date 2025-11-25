@@ -1,4 +1,5 @@
-const ROOT_URL = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
+// All URLs must use miniapp.muscadine.io
+const ROOT_URL = process.env.NEXT_PUBLIC_URL || "https://miniapp.muscadine.io";
 
 /**
  * MiniApp configuration object. Must follow the Base MiniApp specification.

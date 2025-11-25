@@ -42,13 +42,13 @@ const HomePage: React.FC = () => {
             </h1>
             <div className="flex gap-4 justify-center">
               <button 
-                className="bg-white text-black px-8 py-2 rounded-lg text-md font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg"
+                className="bg-white text-black px-8 py-3 rounded-lg text-md font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg min-h-[44px]"
                 onClick={() => window.location.href = '/dashboard'}
               >
                 Login
               </button>
               <button 
-                className="bg-transparent border-2 border-white text-white px-8 py-2 rounded-lg text-md font-semibold hover:bg-white hover:text-black transition-colors duration-200 shadow-lg"
+                className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg text-md font-semibold hover:bg-white hover:text-black transition-colors duration-200 shadow-lg min-h-[44px]"
                 onClick={() => window.open('https://muscadine.box', '_blank')}
               >
                 Learn More

@@ -464,7 +464,7 @@ export default function Dashboard() {
               }}>
                 <Earn
                   vaultAddress={vault.address}
-                  isSponsored={false}
+                  isSponsored={true}
                 />
               </div>
             </div>

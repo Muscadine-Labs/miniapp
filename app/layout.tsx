@@ -8,7 +8,8 @@ import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   // Ensure URL always has https:// protocol
-  let baseUrl = process.env.NEXT_PUBLIC_URL || process.env.VERCEL_URL || "https://miniapp.muscadine.io";
+  // All URLs must use miniapp.muscadine.io
+  let baseUrl = process.env.NEXT_PUBLIC_URL || "https://miniapp.muscadine.io";
   
   // If VERCEL_URL is set, it doesn't include protocol, so add it
   if (baseUrl && !baseUrl.startsWith("http")) {

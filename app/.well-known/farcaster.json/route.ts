@@ -10,56 +10,98 @@ import { minikitConfig } from "../../../minikit.config";
  * - miniapp: MiniApp metadata and configuration
  */
 export async function GET() {
-  // Always use production domain for manifest URLs (required by Farcaster)
-  // Never use Vercel preview URLs as they're not valid for manifest validation
+  // Always use production domain for manifest URLs
+  // This is the canonical manifest endpoint per Base MiniApp specification
+  // Served locally as required by Base Featured Guidelines
+  // All URLs must use miniapp.muscadine.io
   const baseUrl = "https://miniapp.muscadine.io";
 
   const manifest = {
+    version: "1",
+    name: minikitConfig.miniapp.name,
+    subtitle: minikitConfig.miniapp.subtitle,
+    description: minikitConfig.miniapp.description,
+    screenshotUrls: minikitConfig.miniapp.screenshotUrls,
+    iconUrl: minikitConfig.miniapp.iconUrl,
+    splashImageUrl: minikitConfig.miniapp.splashImageUrl,
+    splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,
+    homeUrl: minikitConfig.miniapp.homeUrl,
+    webhookUrl: minikitConfig.miniapp.webhookUrl,
+    primaryCategory: minikitConfig.miniapp.primaryCategory,
+    secondaryCategory: "finance",
+    tags: minikitConfig.miniapp.tags,
+    heroImageUrl: minikitConfig.miniapp.heroImageUrl,
+    tagline: minikitConfig.miniapp.tagline,
+    ogTitle: minikitConfig.miniapp.ogTitle,
+    ogDescription: minikitConfig.miniapp.ogDescription,
+    ogImageUrl: minikitConfig.miniapp.ogImageUrl,
+    framelink: minikitConfig.miniapp.homeUrl,
     accountAssociation: {
       header: "eyJmaWQiOjIwNjQzNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDUzNTBFMjQ5M0ZFZmEwRGJlRTY0ZTliYWM3MGVGNTUzNjk1MWRkMjQifQ",
       payload: "eyJkb21haW4iOiJtaW5pYXBwLm11c2NhZGluZS5pbyJ9",
       signature: "cEUOad3+hgxaE+gdNcxM7q2i9DIuQd49UZ4Qtm8iXcEueprpXWL0RM41BW1umWjtEk8Inlr0XvoX2RqNm2tLRhw="
     },
     baseBuilder: {
-      ownerAddress: "0x31E70f063cA802DedCd76e74C8F6D730eC43D9f0"
+      ownerAddress: minikitConfig.baseBuilder.ownerAddress,
+      allowedDomains: ["miniapp.muscadine.io", "*.muscadine.io"]
     },
     frame: {
-      name: "Muscadine",
       version: "1",
-      iconUrl: "https://miniapp.muscadine.io/icon.png",
-      homeUrl: "https://miniapp.muscadine.io",
-      imageUrl: "https://miniapp.muscadine.io/image.png",
-      splashImageUrl: "https://miniapp.muscadine.io/splash.png",
-      splashBackgroundColor: "#000000",
-      webhookUrl: "https://miniapp.muscadine.io/api/webhook",
-      subtitle: "Earn",
-      primaryCategory: "finance",
-      description: "Earn through our Morpho vaults"
-    },
-    miniapp: {
-      version: minikitConfig.miniapp.version,
       name: minikitConfig.miniapp.name,
-      homeUrl: baseUrl,
-      iconUrl: `${baseUrl}/icon.png`,
-      splashImageUrl: `${baseUrl}/splash.png`,
-      splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,
-      webhookUrl: `${baseUrl}/api/webhook`,
       subtitle: minikitConfig.miniapp.subtitle,
       description: minikitConfig.miniapp.description,
-      screenshotUrls: [
-        `${baseUrl}/screenshot.png`,
-        `${baseUrl}/screenshot2.png`,
-        `${baseUrl}/screenshot3.png`
-      ],
+      iconUrl: minikitConfig.miniapp.iconUrl,
+      homeUrl: minikitConfig.miniapp.homeUrl,
+      imageUrl: minikitConfig.miniapp.heroImageUrl,
+      buttonTitle: `Launch ${minikitConfig.miniapp.name}`,
+      splashImageUrl: minikitConfig.miniapp.splashImageUrl,
+      splashBackgroundColor: minikitConfig.miniapp.splashBackgroundColor,
+      webhookUrl: minikitConfig.miniapp.webhookUrl,
       primaryCategory: minikitConfig.miniapp.primaryCategory,
-      tags: ["defi", "lending", "yield", "base", "earn"],
-      heroImageUrl: `${baseUrl}/hero.png`,
+      tags: minikitConfig.miniapp.tags,
       tagline: minikitConfig.miniapp.tagline,
       ogTitle: minikitConfig.miniapp.ogTitle,
       ogDescription: minikitConfig.miniapp.ogDescription,
-      ogImageUrl: `${baseUrl}/hero.png`
+      ogImageUrl: minikitConfig.miniapp.ogImageUrl
+    },
+    miniapp: {
+      version: minikitConfig.miniapp.version,
+      platform: "web",
+      supportedChains: ["base"],
+      features: ["wallet", "defi", "lending"],
+      permissions: ["wallet_access", "transaction_signing"],
+      capabilities: {
+        wallet: true,
+        transactions: true,
+        defi: true,
+        contract_interaction: true,
+        asset_storage: true
+      },
+      apis: {
+        blockchain: "base",
+        connect: ["wallet", "web3"],
+        transaction: ["send", "sign", "delegate"]
+      },
+      security: {
+        sandbox: true,
+        permissions: ["cross_origin"]
+      }
+    },
+    creator: {
+      name: "Muscadine Team",
+      url: baseUrl
+    },
+    license: "MIT",
+    policy: {
+      privacy: `${baseUrl}/privacy`,
+      terms: `${baseUrl}/terms`
     }
   };
 
-  return Response.json(manifest);
+  return Response.json(manifest, {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 }
