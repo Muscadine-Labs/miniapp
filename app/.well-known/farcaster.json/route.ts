@@ -10,14 +10,14 @@ export async function GET() {
     },
     frame: {
       version: "1",
-      name: "Muscadine",
+      name: "Muscadine Earn",
       iconUrl: `${baseUrl}/icon.png`,
       homeUrl: baseUrl,
       imageUrl: `${baseUrl}/og-image.png`, // 1200x630px PNG for rich embeds
       splashImageUrl: `${baseUrl}/splash.png`,
       splashBackgroundColor: "#000000",
       description: "Earn interest on your crypto",
-      ogTitle: "Muscadine Lending",
+      ogTitle: "Muscadine DeFi Lending",
       ogDescription: "Earn interest on your crypto",
       ogImageUrl: `${baseUrl}/og-image.png`, // 1200x630px PNG (1.91:1 aspect ratio)
       requiredCapabilities: [

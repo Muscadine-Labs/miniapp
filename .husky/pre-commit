@@ -1,1 +1,34 @@
-npm test
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check if node_modules exists
+if [ ! -d "node_modules" ]; then
+  echo "❌ Error: node_modules not found."
+  echo "   Please run 'npm install' to install dependencies before committing."
+  exit 1
+fi
+
+echo "🔍 Running pre-commit checks..."
+
+# Run linter
+echo "   Running linter..."
+npm run lint
+lint_status=$?
+
+if [ $lint_status -ne 0 ]; then
+  echo "\n❌ Commit aborted: linter failed."
+  exit $lint_status
+fi
+
+# Run tests using npx to ensure vitest can be found
+echo "   Running tests..."
+npx --no-install vitest run 2>/dev/null || npm run test
+test_status=$?
+
+if [ $test_status -ne 0 ]; then
+  echo "\n❌ Commit aborted: tests failed."
+  echo "   If dependencies are missing, run 'npm install' first."
+  exit $test_status
+fi
+
+echo "\n✅ All checks passed. Proceeding with commit."

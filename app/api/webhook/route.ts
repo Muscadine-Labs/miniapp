@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const _body = await request.json();
     // Webhook received - process accordingly
     return NextResponse.json({ success: true });
   } catch (error) {
