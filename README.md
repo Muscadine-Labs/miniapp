@@ -22,14 +22,19 @@ All ERC-4626 on Morpho Protocol v1 (Base).
 ## Setup
 
 ```bash
+# Install dependencies
 npm install
+
+# Copy environment variables template
 cp .env.example .env.local
-# Required env vars:
-#   NEXT_PUBLIC_ONCHAINKIT_API_KEY=<from https://portal.cdp.coinbase.com/products/onchainkit>
-# Optional env vars:
-#   COINGECKO_API_KEY=<CoinGecko pro/server key for price proxy>
-#   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<WalletConnect Cloud project id>
-#   NEXT_PUBLIC_URL=<custom deployment url, defaults to https://miniapp.muscadine.io>
+
+# Edit .env.local and add your API keys:
+#   - NEXT_PUBLIC_ONCHAINKIT_API_KEY (required)
+#   - COINGECKO_API_KEY (optional, recommended for production)
+#   - NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (optional)
+#   - NEXT_PUBLIC_URL (optional, defaults to https://miniapp.muscadine.io)
+
+# Start development server
 npm run dev
 ```
 
@@ -37,58 +42,117 @@ The app will be available at `http://localhost:3000`
 
 **Production URL**: [https://miniapp.muscadine.io](https://miniapp.muscadine.io)
 
+### Environment Variables
+
+See `.env.example` for all available environment variables. Required variables:
+
+- `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - **Required**: Get from [Coinbase OnchainKit Portal](https://portal.cdp.coinbase.com/products/onchainkit)
+
+Optional variables:
+- `COINGECKO_API_KEY` - Server-side key for `/api/prices` endpoint (recommended for production)
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` - Enables WalletConnect v2 support
+- `NEXT_PUBLIC_URL` - Custom deployment URL (defaults to `https://miniapp.muscadine.io`)
+
 ## Features
 
-- Real-time vault balances
-- Deposit/withdraw via OnchainKit
-- Interest calculations (ERC-4626)
-- Token prices (CoinGecko)
-- Farcaster auth
+- **Real-time vault balances** - Live updates from Morpho Protocol vaults
+- **Deposit/withdraw** - Seamless transactions via OnchainKit integration
+- **Interest calculations** - Accurate earnings tracking using ERC-4626 standards
+- **Token prices** - Server-side price fetching via CoinGecko API proxy
+- **Farcaster authentication** - Secure wallet connection and user verification
+- **Base MiniApp manifest** - Fully configured manifest at `/.well-known/farcaster.json`
+- **Multi-wallet support** - Coinbase Wallet, injected wallets, and WalletConnect v2
+
+## Development
+
+```bash
+# Run development server
+npm run dev
+
+# Run linter
+npm run lint
+
+# Run type checking
+npm run type-check
+
+# Run tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+```
 
 ## Deploy
 
 ```bash
+# Build for production
 npm run build
+
+# Start production server
 npm start
 ```
 
-### Environment Variables
+### Production Environment Variables
 
-For production deployment, set these environment variables:
+Set these in your deployment platform (Vercel, etc.):
 
-- `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - Required: Your Coinbase OnchainKit API key
-- `COINGECKO_API_KEY` - Optional: Server-side key used by `/api/prices` to proxy CoinGecko (recommended for higher limits)
-- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` - Optional: Enables WalletConnect v2 in Wagmi/OnchainKit
+- `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - **Required**: Your Coinbase OnchainKit API key
+- `COINGECKO_API_KEY` - **Recommended**: Server-side key for `/api/prices` endpoint (higher rate limits)
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` - Optional: Enables WalletConnect v2 support
 - `NEXT_PUBLIC_URL` - Optional: Your production URL (defaults to `https://miniapp.muscadine.io`)
 
 **Production URL**: [https://miniapp.muscadine.io](https://miniapp.muscadine.io)
+
+### MiniApp Manifest
+
+The MiniApp manifest is automatically served at `/.well-known/farcaster.json` and includes:
+- Account association (domain verification)
+- Frame configuration for Base App
+- Base Builder settings
+- Open Graph metadata for social sharing
+
+The manifest is configured in `minikit.config.ts` and revalidates every hour.
 
 ## Project Structure
 
 ```
 app/
-├── api/                    # API routes (auth, webhook, farcaster)
-├── components/             # React components (Dashboard, ClaimRewards)
-├── hooks/                  # Custom hooks (useTokenPrices, useVaultData)
-├── lib/                    # Utilities (wagmi config, ABI)
-├── services/               # External services (DEX integration)
-└── utils/                  # Helper functions
-docs/                       # Documentation and deployment guides
-test/                       # Test mocks and utilities
-public/                     # Static assets and images
+├── api/                    # API routes (auth, prices, webhook)
+│   ├── auth/              # Farcaster authentication endpoint
+│   ├── prices/            # Server-side token price proxy
+│   └── webhook/           # Base MiniApp webhook handler
+├── components/            # React components (Dashboard, HomePage, ErrorBoundary)
+├── hooks/                 # Custom hooks (useTokenPrices, useVaultHistory)
+├── lib/                   # Utilities (wagmi config)
+├── utils/                 # Helper functions (formatCurrency)
+├── .well-known/           # MiniApp manifest route
+│   └── farcaster.json/    # Base/Farcaster manifest endpoint
+└── dashboard/             # Dashboard page route
+test/                      # All test files (consolidated)
+├── __mocks__/             # Test mocks (farcaster-sdk)
+public/                    # Static assets and images
 ```
 
 ## How It Works
 
 Muscadine Box is a **Farcaster Mini App** that enables users to earn yield on their crypto through Morpho Protocol vaults on Base network. The platform:
 
-- **Connects** users via Farcaster authentication
-- **Displays** real-time vault balances and APYs
-- **Facilitates** deposits/withdrawals through OnchainKit integration
-- **Calculates** interest earned using ERC-4626 standards
-- **Fetches** live token prices from CoinGecko API
+- **Connects** users via Farcaster authentication and wallet integration
+- **Displays** real-time vault balances and APYs from Morpho Protocol
+- **Facilitates** deposits/withdrawals through OnchainKit Earn components
+- **Calculates** interest earned using ERC-4626 standards and historical transaction logs
+- **Fetches** live token prices via server-side CoinGecko API proxy (`/api/prices`)
 - **Provides** secure, non-custodial access to DeFi yields
-- **Takes** 1% performance fee off of yield 
+- **Serves** Base MiniApp manifest at `/.well-known/farcaster.json` for discovery and embedding
+
+### Architecture
+
+- **Frontend**: Next.js 15 with React Server Components and Client Components
+- **Blockchain**: Wagmi + Viem for Ethereum interactions on Base network
+- **Wallet**: OnchainKit for wallet connection and transaction handling
+- **Prices**: Server-side API route (`/api/prices`) proxies CoinGecko with caching
+- **Vault History**: Custom hook (`useVaultHistory`) fetches deposit/withdraw events from chain
+- **Testing**: Vitest with all tests consolidated in `/test` folder 
 
 ## Future Plans
 
