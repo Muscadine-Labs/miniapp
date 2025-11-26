@@ -68,28 +68,26 @@ export function useVaultHistory(
           toBlock: 'latest' as const,
         };
 
-        const [depositLogs, withdrawLogs] = await Promise.all([
-          client.getLogs({
-            ...logsParams,
-            event: parseAbiItem('event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)'),
-          }),
-          client.getLogs({
-            ...logsParams,
-            event: parseAbiItem('event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)'),
-          }),
-        ]);
+        const depositLogsResult = await client.getLogs({
+          ...logsParams,
+          event: parseAbiItem('event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)'),
+        });
+        const withdrawLogsResult = await client.getLogs({
+          ...logsParams,
+          event: parseAbiItem('event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)'),
+        });
 
-        const totals = depositLogs.reduce(
-          (sum, log) => {
-            const assets = log.args.assets as bigint;
+        const totals = depositLogsResult.reduce<number>(
+          (sum: number, log) => {
+            const assets = (log.args?.assets ?? 0n) as bigint;
             return sum + Number(formatUnits(assets, decimals));
           },
           0
         );
 
-        const withdrawals = withdrawLogs.reduce(
-          (sum, log) => {
-            const assets = log.args.assets as bigint;
+        const withdrawals = withdrawLogsResult.reduce<number>(
+          (sum: number, log) => {
+            const assets = (log.args?.assets ?? 0n) as bigint;
             return sum + Number(formatUnits(assets, decimals));
           },
           0

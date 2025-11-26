@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { useAccount, useReadContracts } from 'wagmi';
-import { base } from 'wagmi/chains';
+import { base } from 'viem/chains';
 import { erc20Abi, formatUnits } from 'viem';
 import { 
   ConnectWallet, 
@@ -189,11 +189,11 @@ export default function Dashboard() {
   };
 
   // Calculate portfolio totals using real historical data
-  // Initial Deposited: net deposits (deposits - withdrawals) across all vaults in USD
-  const initialDeposited = 
-    usdcHistory.netDeposits + 
-    cbbtcHistory.netDeposits + 
-    wethHistory.netDeposits;
+  // Total Deposited: sum of all deposits across all vaults in USD (gross deposits)
+  const totalDeposited = 
+    usdcHistory.totalDeposited + 
+    cbbtcHistory.totalDeposited + 
+    wethHistory.totalDeposited;
 
   // Current Balance: total value across all vaults in USD
   const currentBalance = 
@@ -208,11 +208,8 @@ export default function Dashboard() {
     wethHistory.interestEarned;
 
   // Portfolio totals calculated from vault history
-
   const totalAssets = currentBalance + liquidBalanceUSD;
-  const totalDeposited = initialDeposited;
   const totalEarned = totalInterestEarned;
-
 
   return (
     <div className="min-h-screen bg-slate-50 py-4 px-3 sm:py-8 sm:px-4">
@@ -280,7 +277,7 @@ export default function Dashboard() {
                   {formatCurrency(totalDeposited)}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  All deposits into Morpho vaults
+                  Total amount deposited across all vaults
                 </p>
               </div>
               <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
