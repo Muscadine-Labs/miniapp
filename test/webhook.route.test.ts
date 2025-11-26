@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import * as webhookRoute from '../webhook/route';
+import * as webhookRoute from '../app/api/webhook/route';
 
 const makeJsonRequest = (body: unknown) =>
   new NextRequest('http://localhost/api/webhook', {
@@ -30,5 +30,4 @@ describe('api/webhook', () => {
     expect(res.status).toBe(500);
   });
 });
-
 

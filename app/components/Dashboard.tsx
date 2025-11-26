@@ -1,6 +1,8 @@
 "use client";
 import React from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContracts } from 'wagmi';
+import { base } from 'wagmi/chains';
+import { erc20Abi, formatUnits } from 'viem';
 import { 
   ConnectWallet, 
   Wallet, 
@@ -17,6 +19,7 @@ import {
 import { Earn, useMorphoVault } from '@coinbase/onchainkit/earn';
 import { useVaultHistory } from '../hooks/useVaultHistory';
 import { useTokenPrices } from '../hooks/useTokenPrices';
+import { formatCurrency } from '../utils/formatCurrency';
 // ClaimRewardsButton removed - no longer using Morpho rewards
 import '@coinbase/onchainkit/styles.css';
 
@@ -39,11 +42,51 @@ const VAULTS = [
   },
 ];
 
+const LIQUID_TOKENS = [
+  {
+    symbol: 'USDC',
+    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
+    decimals: 6,
+    priceKey: 'usdc' as const,
+  },
+  {
+    symbol: 'cbBTC',
+    address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf' as `0x${string}`,
+    decimals: 8,
+    priceKey: 'cbbtc' as const,
+  },
+  {
+    symbol: 'WETH',
+    address: '0x4200000000000000000000000000000000000006' as `0x${string}`,
+    decimals: 18,
+    priceKey: 'weth' as const,
+  },
+] as const;
+
 export default function Dashboard() {
   const { isConnected, address } = useAccount();
 
   // Fetch token prices
   const tokenPrices = useTokenPrices();
+
+  const walletContracts = React.useMemo(() => {
+    if (!address) return [];
+    return LIQUID_TOKENS.map((token) => ({
+      abi: erc20Abi,
+      address: token.address,
+      functionName: 'balanceOf' as const,
+      args: [address],
+      chainId: base.id,
+    }));
+  }, [address]);
+
+  const { data: walletBalancesData } = useReadContracts({
+    contracts: walletContracts,
+    query: {
+      enabled: walletContracts.length > 0,
+      refetchInterval: 15000,
+    },
+  });
 
   // Token prices available for calculations
 
@@ -92,6 +135,17 @@ export default function Dashboard() {
   const wethBalanceUSD = getUSDValue(wethVault.balance, 'WETH');
 
   // USD balances calculated for each vault
+
+  const liquidBalanceUSD = React.useMemo(() => {
+    if (!walletBalancesData?.length) return 0;
+    return walletBalancesData.reduce((sum, entry, index) => {
+      const token = LIQUID_TOKENS[index];
+      if (!token || !entry?.result) return sum;
+      const tokenAmount = Number(formatUnits(entry.result as bigint, token.decimals));
+      const tokenPrice = tokenPrices[token.priceKey] || 0;
+      return sum + tokenAmount * tokenPrice;
+    }, 0);
+  }, [walletBalancesData, tokenPrices]);
 
   // Fetch historical deposit/withdraw data for each vault (using USD values)
   const usdcHistory = useVaultHistory(
@@ -155,281 +209,122 @@ export default function Dashboard() {
 
   // Portfolio totals calculated from vault history
 
-  // Calculate projected annual return for each vault (without fees)
-  const getVaultProjectedYield = (vault: typeof usdcVault, balanceUSD: number) => {
-    const apy = vault.totalApy || 0;
-    return balanceUSD * (apy / 100);
-  };
-  
-  // Projected Annual Return: based on current balances and APYs
-  const projectedAnnualReturn = 
-    getVaultProjectedYield(usdcVault, usdcBalanceUSD) + 
-    getVaultProjectedYield(cbbtcVault, cbbtcBalanceUSD) + 
-    getVaultProjectedYield(wethVault, wethBalanceUSD);
-  
-  // Expected Monthly Interest
-  const expectedMonthlyInterest = projectedAnnualReturn / 12;
+  const totalAssets = currentBalance + liquidBalanceUSD;
+  const totalDeposited = initialDeposited;
+  const totalEarned = totalInterestEarned;
 
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f8fafc',
-      padding: '2rem 1rem'
-    }}>
+    <div className="min-h-screen bg-slate-50 py-4 px-3 sm:py-8 sm:px-4">
       {/* Header/Banner */}
-      <header style={{
-        maxWidth: '1200px',
-        margin: '0 auto 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '1.5rem',
-        backgroundColor: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
-      }}>
+      <header className="max-w-7xl mx-auto mb-4 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 p-4 sm:p-6 bg-white rounded-xl shadow-sm">
         <div>
-          <h1 style={{
-            fontSize: '1.875rem',
-            fontWeight: '700',
-            color: '#0f172a',
-            margin: 0
-          }}>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 m-0">
             <a 
               href="https://muscadine.box" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{
-                color: '#0f172a',
-                textDecoration: 'none'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              className="text-slate-900 no-underline hover:underline"
             >
               Muscadine
             </a>
           </h1>
-          <p style={{
-            fontSize: '0.875rem',
-            color: '#64748b',
-            margin: '0.25rem 0 0'
-          }}>
+          <p className="text-sm text-slate-500 mt-1">
             DeFi Lending on Base
           </p>
         </div>
-        <Wallet>
-          <ConnectWallet>
-            <Avatar className="h-6 w-6" />
-            <Name />
-          </ConnectWallet>
-          <WalletDropdown>
-            <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-              <Avatar />
+        <div className="w-full sm:w-auto">
+          <Wallet>
+            <ConnectWallet>
+              <Avatar className="h-6 w-6" />
               <Name />
-              <Address className="text-gray-500" />
-            </Identity>
-            <WalletDropdownDisconnect />
-          </WalletDropdown>
-        </Wallet>
+            </ConnectWallet>
+            <WalletDropdown>
+              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                <Avatar />
+                <Name />
+                <Address className="text-gray-500" />
+              </Identity>
+              <WalletDropdownDisconnect />
+            </WalletDropdown>
+          </Wallet>
+        </div>
       </header>
 
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
+      <div className="max-w-7xl mx-auto">
         {/* Claim Rewards Button removed - no longer using Morpho rewards */}
 
         {/* Portfolio Overview */}
         {isConnected && (
-          <div style={{
-            padding: '2rem',
-            backgroundColor: '#ffffff',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-            marginBottom: '2rem'
-          }}>
-            <h2 style={{
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              color: '#0f172a',
-              marginBottom: '1.5rem'
-            }}>
+          <div className="p-4 sm:p-6 md:p-8 bg-white rounded-xl shadow-sm mb-4 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-4 sm:mb-6">
               Portfolio Overview
             </h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '1.5rem'
-            }}>
-              <div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  marginBottom: '0.5rem'
-                }}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
+                  Total Assets
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
+                  {formatCurrency(totalAssets)}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Liquid + Morpho vault positions
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
                   Total Deposited
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#0f172a'
-                }}>
-                  {formatCurrency(currentBalance)}
-                </div>
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
+                  {formatCurrency(totalDeposited)}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  All deposits into Morpho vaults
+                </p>
               </div>
-              <div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  marginBottom: '0.5rem'
-                }}>
-                  Initial Deposited
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#0f172a'
-                }}>
-                  {formatCurrency(initialDeposited)}
-                </div>
-              </div>
-              <div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  marginBottom: '0.5rem'
-                }}>
-                  Total Return
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#10b981'
-                }}>
-                  {formatCurrency(currentBalance)}
-                </div>
-              </div>
-              <div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  marginBottom: '0.5rem'
-                }}>
-                  Total Interest Earned
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#10b981'
-                }}>
-                  {formatCurrency(totalInterestEarned)}
-                </div>
-              </div>
-              <div>
-                <div style={{
-                  fontSize: '0.875rem',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  marginBottom: '0.5rem'
-                }}>
-                  Expected Monthly Interest
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#6366f1'
-                }}>
-                  {formatCurrency(expectedMonthlyInterest)}
-                </div>
+              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
+                  Total Earned
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-500 break-words">
+                  {formatCurrency(totalEarned)}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Interest generated from Morpho
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {/* Vault Cards using OnchainKit Earn */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: '1.25rem'
-        }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {VAULTS.map((vault) => (
             <div
               key={vault.address}
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                padding: '1.25rem',
-                overflow: 'visible'
-              }}
+              className="bg-white rounded-xl shadow-sm p-4 sm:p-5 overflow-visible"
             >
-              <div style={{
-                marginBottom: '1rem'
-              }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  color: '#0f172a',
-                  margin: '0 0 0.875rem'
-                }}>
+              <div className="mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 sm:mb-3.5">
                   {vault.name}
                 </h3>
                 
                 {/* Custom stats section */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '0.75rem',
-                  padding: '0.625rem',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0'
-                }}>
+                <div className="grid grid-cols-2 gap-3 p-2.5 sm:p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: '#64748b',
-                      fontWeight: '500',
-                      marginBottom: '0.25rem'
-                    }}>
+                    <div className="text-xs text-slate-500 font-medium mb-1">
                       Balance
                     </div>
-                    <div style={{
-                      fontSize: '1rem',
-                      fontWeight: '600',
-                      color: '#0f172a'
-                    }}>
+                    <div className="text-sm sm:text-base font-semibold text-slate-900 break-words">
                       {formatCurrency(getVaultBalanceUSD(vault.address))}
                     </div>
                   </div>
                   <div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: '#64748b',
-                      fontWeight: '500',
-                      marginBottom: '0.25rem'
-                    }}>
+                    <div className="text-xs text-slate-500 font-medium mb-1">
                       Interest Earned
                     </div>
-                    <div style={{
-                      fontSize: '1rem',
-                      fontWeight: '600',
-                      color: '#10b981'
-                    }}>
+                    <div className="text-sm sm:text-base font-semibold text-emerald-500 break-words">
                       {(() => {
                         const vaultHistory = getVaultHistory(vault.address);
                         return formatCurrency(vaultHistory?.interestEarned || 0);
@@ -440,11 +335,7 @@ export default function Dashboard() {
               </div>
 
               {/* OnchainKit Earn Component */}
-              <div style={{
-                margin: '-0.25rem -0.75rem -0.75rem -0.75rem',
-                padding: '0',
-                overflow: 'visible'
-              }}>
+              <div className="-mx-3 -mb-3 sm:-mx-4 sm:-mb-4 p-0 overflow-visible">
                 <Earn
                   vaultAddress={vault.address}
                   isSponsored={true}

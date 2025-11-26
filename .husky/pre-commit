@@ -1,6 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
   echo "❌ Error: node_modules not found."

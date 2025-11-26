@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import type { Address } from 'viem';
-import { useVaultHistory } from '../useVaultHistory';
+import { useVaultHistory } from '../app/hooks/useVaultHistory';
 import { usePublicClient } from 'wagmi';
 import { vi } from 'vitest';
 
@@ -73,5 +73,4 @@ describe('useVaultHistory', () => {
     });
   });
 });
-
 

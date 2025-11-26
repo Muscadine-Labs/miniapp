@@ -24,8 +24,12 @@ All ERC-4626 on Morpho Protocol v1 (Base).
 ```bash
 npm install
 cp .env.example .env.local
-# Add your NEXT_PUBLIC_ONCHAINKIT_API_KEY to .env.local
-# Get your API key from: https://portal.cdp.coinbase.com/products/onchainkit
+# Required env vars:
+#   NEXT_PUBLIC_ONCHAINKIT_API_KEY=<from https://portal.cdp.coinbase.com/products/onchainkit>
+# Optional env vars:
+#   COINGECKO_API_KEY=<CoinGecko pro/server key for price proxy>
+#   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<WalletConnect Cloud project id>
+#   NEXT_PUBLIC_URL=<custom deployment url, defaults to https://miniapp.muscadine.io>
 npm run dev
 ```
 
@@ -53,6 +57,8 @@ npm start
 For production deployment, set these environment variables:
 
 - `NEXT_PUBLIC_ONCHAINKIT_API_KEY` - Required: Your Coinbase OnchainKit API key
+- `COINGECKO_API_KEY` - Optional: Server-side key used by `/api/prices` to proxy CoinGecko (recommended for higher limits)
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` - Optional: Enables WalletConnect v2 in Wagmi/OnchainKit
 - `NEXT_PUBLIC_URL` - Optional: Your production URL (defaults to `https://miniapp.muscadine.io`)
 
 **Production URL**: [https://miniapp.muscadine.io](https://miniapp.muscadine.io)
