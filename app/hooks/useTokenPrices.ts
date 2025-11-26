@@ -1,5 +1,8 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+const API_URL = '/api/prices';
+const POLL_INTERVAL = 60_000;
 
 export type TokenPrices = {
   usdc: number;
@@ -15,40 +18,74 @@ export function useTokenPrices(): TokenPrices {
     weth: 0,
     isLoading: true,
   });
+  const controllerRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    async function fetchPrices() {
+    let isMounted = true;
+
+    const fetchPrices = async () => {
+      const controller = new AbortController();
+      controllerRef.current = controller;
+
+      setPrices((prev) => (prev.isLoading ? prev : { ...prev, isLoading: true }));
+
       try {
-        // Fetch prices from CoinGecko API (free, no API key needed)
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'
-        );
+        const response = await fetch(API_URL, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch token prices: ${response.status}`);
+        }
+
         const data = await response.json();
 
+        if (!isMounted) {
+          return;
+        }
+
         setPrices({
-          usdc: 1, // USDC = $1
-          cbbtc: data.bitcoin?.usd || 0,
-          weth: data.ethereum?.usd || 0,
+          usdc: data.usdc ?? 1,
+          cbbtc: data.cbbtc ?? 0,
+          weth: data.weth ?? 0,
           isLoading: false,
         });
       } catch (error) {
-        // Error fetching token prices - fail silently in production
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching token prices:', error);
+        const aborted = controller.signal.aborted || !isMounted;
+        if (!aborted) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching token prices:', error);
+          }
+          setPrices({
+            usdc: 1,
+            cbbtc: 0,
+            weth: 0,
+            isLoading: false,
+          });
         }
-        setPrices({
-          usdc: 1,
-          cbbtc: 0,
-          weth: 0,
-          isLoading: false,
-        });
+      } finally {
+        controllerRef.current = null;
+        if (isMounted) {
+          timeoutRef.current = setTimeout(fetchPrices, POLL_INTERVAL);
+        }
       }
-    }
+    };
 
     fetchPrices();
-    // Refresh prices every 60 seconds
-    const interval = setInterval(fetchPrices, 60000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+    };
   }, []);
 
   return prices;

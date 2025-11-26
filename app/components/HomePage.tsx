@@ -1,21 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+import React from 'react';
 
 import Prism from './Prism';
 
 const HomePage: React.FC = () => {
-  useEffect(() => {
-    // Ensure ready() is called when this component mounts
-    // This is a backup in case the RootProvider call didn't work
-    try {
-      sdk.actions.ready();
-    } catch {
-      // Silently fail if SDK not available
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-full h-screen relative">
@@ -26,7 +15,7 @@ const HomePage: React.FC = () => {
               timeScale={0.5}
               height={3.5}
               baseWidth={5.5}
-              scale={3.6}
+              scale={2.5}
               hueShift={0}
               colorFrequency={1}
               noise={0}
@@ -35,20 +24,20 @@ const HomePage: React.FC = () => {
         </div>
         
         {/* Overlay content */}
-        <div className="absolute inset-0 flex items-center justify-center bg-opacity-30 z-10">
-          <div className="text-center">
-            <h1 className="text-6xl md:text-8xl text-white mb-8 tracking-wider" style={{ fontFamily: 'serif' }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-opacity-30 z-10 px-4">
+          <div className="text-center w-full max-w-md">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl text-white mb-6 md:mb-8 tracking-wider px-4" style={{ fontFamily: 'serif' }}>
               THE VAULT
             </h1>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4">
               <button 
-                className="bg-white text-black px-8 py-3 rounded-lg text-md font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg min-h-[44px]"
+                className="bg-white text-black px-6 sm:px-8 py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 shadow-lg min-h-[44px] w-full sm:w-auto"
                 onClick={() => window.location.href = '/dashboard'}
               >
                 Login
               </button>
               <button 
-                className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg text-md font-semibold hover:bg-white hover:text-black transition-colors duration-200 shadow-lg min-h-[44px]"
+                className="bg-transparent border-2 border-white text-white px-6 sm:px-8 py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-white hover:text-black active:bg-white/80 transition-colors duration-200 shadow-lg min-h-[44px] w-full sm:w-auto"
                 onClick={() => window.open('https://muscadine.box', '_blank')}
               >
                 Learn More

@@ -1,10 +1,38 @@
 "use client";
-import { http, createConfig, fallback } from "wagmi";
+import { createConfig, fallback, http } from "wagmi";
+import { coinbaseWallet, injected, walletConnect } from "wagmi/connectors";
 import { base } from "wagmi/chains";
+
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+
+const connectors = [
+  coinbaseWallet({
+    appName: "Muscadine DeFi",
+    preference: "all",
+    chainId: base.id,
+  }),
+  injected({
+    shimDisconnect: true,
+  }),
+  ...(walletConnectProjectId
+    ? [
+        walletConnect({
+          projectId: walletConnectProjectId,
+          metadata: {
+            name: "Muscadine DeFi",
+            description: "Lend and earn on Base",
+            url: "https://miniapp.muscadine.io",
+            icons: ["https://miniapp.muscadine.io/icon.png"],
+          },
+          showQrModal: true,
+        }),
+      ]
+    : []),
+] as const;
 
 export const wagmiConfig = createConfig({
   chains: [base],
-  connectors: [],
+  connectors,
   ssr: true,
   transports: {
     [base.id]: fallback([

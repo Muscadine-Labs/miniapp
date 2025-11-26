@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary } from '../app/components/ErrorBoundary';
 
 // Component that throws an error for testing
 function ThrowError({ shouldThrow }: { shouldThrow: boolean }) {
@@ -228,3 +228,4 @@ describe('ErrorBoundary', () => {
     });
   });
 });
+

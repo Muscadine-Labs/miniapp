@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import * as authRoute from '../auth/route';
+import * as authRoute from '../app/api/auth/route';
 import { vi } from 'vitest';
 
 vi.mock('@farcaster/quick-auth', () => {
@@ -39,5 +39,4 @@ describe('api/auth GET', () => {
     expect(res.status).toBe(401);
   });
 });
-
 

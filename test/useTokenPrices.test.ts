@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { useTokenPrices } from '../useTokenPrices';
+import { useTokenPrices } from '../app/hooks/useTokenPrices';
 import { vi } from 'vitest';
 
 describe('useTokenPrices', () => {
@@ -12,7 +12,9 @@ describe('useTokenPrices', () => {
 
   it('returns loading initially and then parsed prices', async () => {
     global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({ bitcoin: { usd: 70000 }, ethereum: { usd: 3000 } }),
+      ok: true,
+      status: 200,
+      json: async () => ({ usdc: 1, cbbtc: 70000, weth: 3000 }),
     } as unknown as Response);
 
     const { result } = renderHook(() => useTokenPrices());
@@ -42,16 +44,22 @@ describe('useTokenPrices', () => {
     // no timers to advance when using real timers
   });
 
-  it('stops interval on unmount', async () => {
-    const clearSpy = vi.spyOn(global, 'clearInterval');
+  it('stops timer on unmount', async () => {
+    const clearSpy = vi.spyOn(global, 'clearTimeout');
     global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({ bitcoin: { usd: 70000 }, ethereum: { usd: 3000 } }),
+      ok: true,
+      status: 200,
+      json: async () => ({ usdc: 1, cbbtc: 70000, weth: 3000 }),
     } as unknown as Response);
 
-    const { unmount } = renderHook(() => useTokenPrices());
+    const { unmount, result } = renderHook(() => useTokenPrices());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
     unmount();
     expect(clearSpy).toHaveBeenCalled();
   });
 });
-
 

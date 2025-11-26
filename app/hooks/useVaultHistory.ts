@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePublicClient } from 'wagmi';
 import { Address, formatUnits, parseAbiItem } from 'viem';
 
@@ -11,6 +11,16 @@ export type VaultHistory = {
   isLoading: boolean;
 };
 
+type RawVaultHistory = {
+  totalDepositedTokens: number;
+  totalWithdrawnTokens: number;
+};
+
+const historyCache = new Map<string, RawVaultHistory>();
+
+const getCacheKey = (vaultAddress: Address, userAddress: Address) =>
+  `${vaultAddress.toLowerCase()}:${userAddress.toLowerCase()}`;
+
 export function useVaultHistory(
   vaultAddress: Address,
   userAddress: Address | undefined,
@@ -19,99 +29,122 @@ export function useVaultHistory(
   tokenPriceUSD: number = 1
 ): VaultHistory {
   const publicClient = usePublicClient();
-  const [history, setHistory] = useState<VaultHistory>({
-    totalDeposited: 0,
-    totalWithdrawn: 0,
-    netDeposits: 0,
-    interestEarned: 0,
-    isLoading: true,
-  });
+
+  const [rawHistory, setRawHistory] = useState<RawVaultHistory>(() => ({
+    totalDepositedTokens: 0,
+    totalWithdrawnTokens: 0,
+  }));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (!publicClient || !userAddress || !vaultAddress) {
-      setHistory({
-        totalDeposited: 0,
-        totalWithdrawn: 0,
-        netDeposits: 0,
-        interestEarned: 0,
-        isLoading: false,
+      setRawHistory({
+        totalDepositedTokens: 0,
+        totalWithdrawnTokens: 0,
       });
+      setIsLoading(false);
       return;
     }
+    const client = publicClient;
+
+    const cacheKey = getCacheKey(vaultAddress, userAddress);
+    const cached = historyCache.get(cacheKey);
+    if (cached) {
+      setRawHistory(cached);
+      setIsLoading(false);
+    }
+
+    let cancelled = false;
 
     async function fetchHistory() {
+      setIsLoading(true);
       try {
-
-        // Deposit event: event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)
-        const depositLogs = await publicClient!.getLogs({
+        const logsParams = {
           address: vaultAddress,
+          args: {
+            owner: userAddress,
+          },
+          fromBlock: 0n,
+          toBlock: 'latest' as const,
+        };
+
+        const depositLogsResult = await client.getLogs({
+          ...logsParams,
           event: parseAbiItem('event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)'),
-          args: {
-            owner: userAddress,
-          },
-          fromBlock: 0n,
-          toBlock: 'latest',
         });
-
-        // Withdraw event: event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)
-        const withdrawLogs = await publicClient!.getLogs({
-          address: vaultAddress,
+        const withdrawLogsResult = await client.getLogs({
+          ...logsParams,
           event: parseAbiItem('event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)'),
-          args: {
-            owner: userAddress,
+        });
+
+        const totals = depositLogsResult.reduce<number>(
+          (sum: number, log) => {
+            const assets = (log.args?.assets ?? 0n) as bigint;
+            return sum + Number(formatUnits(assets, decimals));
           },
-          fromBlock: 0n,
-          toBlock: 'latest',
-        });
+          0
+        );
 
+        const withdrawals = withdrawLogsResult.reduce<number>(
+          (sum: number, log) => {
+            const assets = (log.args?.assets ?? 0n) as bigint;
+            return sum + Number(formatUnits(assets, decimals));
+          },
+          0
+        );
 
-        // Calculate total deposited (in USD)
-        const totalDeposited = depositLogs.reduce((sum, log) => {
-          const assets = log.args.assets as bigint;
-          const tokenAmount = Number(formatUnits(assets, decimals));
-          const usdAmount = tokenAmount * tokenPriceUSD;
-          return sum + usdAmount;
-        }, 0);
+        if (cancelled) {
+          return;
+        }
 
-        // Calculate total withdrawn (in USD)
-        const totalWithdrawn = withdrawLogs.reduce((sum, log) => {
-          const assets = log.args.assets as bigint;
-          const tokenAmount = Number(formatUnits(assets, decimals));
-          const usdAmount = tokenAmount * tokenPriceUSD;
-          return sum + usdAmount;
-        }, 0);
+        const nextRaw: RawVaultHistory = {
+          totalDepositedTokens: totals,
+          totalWithdrawnTokens: withdrawals,
+        };
 
-        // Net deposits = deposits - withdrawals
-        const netDeposits = totalDeposited - totalWithdrawn;
-
-        // Interest earned = current balance - net deposits
-        const interestEarned = Math.max(0, currentBalance - netDeposits);
-
-        setHistory({
-          totalDeposited,
-          totalWithdrawn,
-          netDeposits,
-          interestEarned,
-          isLoading: false,
-        });
+        historyCache.set(cacheKey, nextRaw);
+        setRawHistory(nextRaw);
       } catch (error) {
-        // Error fetching vault history - fail silently in production
         if (process.env.NODE_ENV === 'development') {
           console.error('Error fetching vault history:', error);
         }
-        setHistory({
-          totalDeposited: 0,
-          totalWithdrawn: 0,
-          netDeposits: 0,
-          interestEarned: 0,
-          isLoading: false,
-        });
+        if (!cancelled) {
+          setRawHistory({
+            totalDepositedTokens: 0,
+            totalWithdrawnTokens: 0,
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     fetchHistory();
-  }, [publicClient, vaultAddress, userAddress, currentBalance, decimals, tokenPriceUSD]);
 
-  return history;
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, vaultAddress, userAddress, decimals]);
+
+  const derivedHistory = useMemo(() => {
+    const totalDeposited = rawHistory.totalDepositedTokens * tokenPriceUSD;
+    const totalWithdrawn = rawHistory.totalWithdrawnTokens * tokenPriceUSD;
+    const netDeposits = totalDeposited - totalWithdrawn;
+    const interestEarned = Math.max(0, currentBalance - netDeposits);
+
+    return {
+      totalDeposited,
+      totalWithdrawn,
+      netDeposits,
+      interestEarned,
+    };
+  }, [rawHistory, tokenPriceUSD, currentBalance]);
+
+  return {
+    ...derivedHistory,
+    isLoading,
+  };
 }
 
