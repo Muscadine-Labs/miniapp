@@ -14,7 +14,7 @@ export const minikitConfig = {
   },
   miniapp: {
     version: "1",
-    name: "Muscadine Earn",
+    name: "Muscadine",
     subtitle: "DeFi Lending Platform",
     description: "Earn interest on your crypto",
     screenshotUrls: [`${ROOT_URL}/screenshot.png`],
@@ -30,10 +30,11 @@ export const minikitConfig = {
     ogTitle: "Muscadine DeFi Lending",
     ogDescription: "Earn interest on your crypto",
     ogImageUrl: `${ROOT_URL}/og-image.png`, // Must be 1200x630px PNG (1.91:1 aspect ratio)
+    noindex: false,
   },
   frame: {
     version: "1",
-    name: "Muscadine Earn",
+    name: "Muscadine",
     iconUrl: `${ROOT_URL}/icon.png`,
     homeUrl: ROOT_URL,
     imageUrl: `${ROOT_URL}/og-image.png`,
