@@ -86,10 +86,22 @@ if (!global.ResizeObserver) {
 // Mock IntersectionObserver if not available
 if (!global.IntersectionObserver) {
   global.IntersectionObserver = class IntersectionObserver {
+    root: Element | null = null;
+    rootMargin: string = '';
+    thresholds: ReadonlyArray<number> = [];
+    
+    constructor(
+      public callback: IntersectionObserverCallback,
+      public options?: IntersectionObserverInit
+    ) {}
+    
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as typeof IntersectionObserver;
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  } as unknown as typeof IntersectionObserver;
 }
 
 
