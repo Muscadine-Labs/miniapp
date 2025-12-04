@@ -56,12 +56,23 @@ const nextConfig: NextConfig = {
   },
   
   // Webpack configuration
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.externals.push("pino-pretty", "lokijs", "encoding");
     config.resolve.fallback = {
       ...config.resolve.fallback,
       "@react-native-async-storage/async-storage": false,
     };
+    
+    // Prevent SSR issues with wagmi connectors
+    if (isServer) {
+      config.externals.push({
+        "thread-stream": "commonjs thread-stream",
+        "pino": "commonjs pino",
+        "@walletconnect/universal-provider": "commonjs @walletconnect/universal-provider",
+        "@walletconnect/ethereum-provider": "commonjs @walletconnect/ethereum-provider",
+      });
+    }
+    
     return config;
   },
   
