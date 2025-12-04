@@ -17,6 +17,7 @@ export default [
   },
   {
     files: ["**/*.{ts,tsx}"],
+    ignores: ["**/.well-known/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -33,6 +34,35 @@ export default [
     },
     rules: {
       ...tseslint.configs.recommended.rules,
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "no-console": "off",
+    },
+  },
+  {
+    // Handle .well-known files without TypeScript project requirement
+    files: ["**/.well-known/**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+        },
+        // Don't require project for .well-known files
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tseslint,
+    },
+    rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
