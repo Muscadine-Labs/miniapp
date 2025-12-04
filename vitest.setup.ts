@@ -6,8 +6,12 @@ import { createRoot } from 'react-dom/client';
 global.React = React;
 
 // Ensure React DOM is available (critical for CI)
-if (typeof (global as any).createRoot === 'undefined') {
-  (global as any).createRoot = createRoot;
+interface GlobalWithCreateRoot {
+  createRoot?: typeof createRoot;
+}
+const globalWithCreateRoot = global as unknown as GlobalWithCreateRoot;
+if (typeof globalWithCreateRoot.createRoot === 'undefined') {
+  globalWithCreateRoot.createRoot = createRoot;
 }
 
 // Mock window.matchMedia for tests
@@ -85,7 +89,7 @@ if (!global.IntersectionObserver) {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as any;
+  } as typeof IntersectionObserver;
 }
 
 
