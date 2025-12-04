@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Skip linting during build (run separately with npm run lint)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -50,7 +46,12 @@ const nextConfig: NextConfig = {
   
   // Image optimization
   images: {
-    domains: ['api.coingecko.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.coingecko.com',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
   },
   
@@ -63,6 +64,9 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  
+  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+  turbopack: {},
   
   // Environment variables validation
   env: {
