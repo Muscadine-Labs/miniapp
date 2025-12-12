@@ -124,8 +124,15 @@ export function useMorphoVaultsData(vaultAddresses: string[]) {
           if (data.vaults && data.vaults.length > 0) {
             data.vaults.forEach((vault) => {
               const vaultWithId = vault as VaultData & { id?: string };
+              // GraphQL response has 'id' field, not 'address'
+              // The query explicitly requests 'id', so it should always be present
+              if (!vaultWithId.id) {
+                console.warn('Vault missing id field, skipping:', vault);
+                return;
+              }
+              
               results.push({
-                address: vaultWithId.id || vault.address,
+                address: vaultWithId.id.toLowerCase(),
                 name: vault.name,
                 symbol: vault.symbol,
                 apy: vault.apy,
