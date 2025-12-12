@@ -2,6 +2,7 @@
 // Using a simple config to avoid FlatCompat circular reference issues
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
+import nextPlugin from "@next/eslint-plugin-next";
 
 export default [
   {
@@ -11,6 +12,7 @@ export default [
       "out/**",
       "dist/**",
       "build/**",
+      "next-env.d.ts",
       "*.config.{js,ts,mjs}",
       "coverage/**",
     ],
@@ -31,9 +33,12 @@ export default [
     },
     plugins: {
       "@typescript-eslint": tseslint,
+      "@next/next": nextPlugin,
     },
     rules: {
       ...tseslint.configs.recommended.rules,
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -61,8 +66,11 @@ export default [
     },
     plugins: {
       "@typescript-eslint": tseslint,
+      "@next/next": nextPlugin,
     },
     rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
