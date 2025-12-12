@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Skip linting during build (run separately with npm run lint)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -50,19 +46,38 @@ const nextConfig: NextConfig = {
   
   // Image optimization
   images: {
-    domains: ['api.coingecko.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.coingecko.com',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
   },
   
   // Webpack configuration
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.externals.push("pino-pretty", "lokijs", "encoding");
     config.resolve.fallback = {
       ...config.resolve.fallback,
       "@react-native-async-storage/async-storage": false,
     };
+    
+    // Prevent SSR issues with wagmi connectors
+    if (isServer) {
+      config.externals.push({
+        "thread-stream": "commonjs thread-stream",
+        "pino": "commonjs pino",
+        "@walletconnect/universal-provider": "commonjs @walletconnect/universal-provider",
+        "@walletconnect/ethereum-provider": "commonjs @walletconnect/ethereum-provider",
+      });
+    }
+    
     return config;
   },
+  
+  // Turbopack configuration (Next.js 16 uses Turbopack by default)
+  turbopack: {},
   
   // Environment variables validation
   env: {
