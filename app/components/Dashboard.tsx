@@ -1,8 +1,6 @@
 "use client";
 import React from 'react';
-import { useAccount, useReadContracts } from 'wagmi';
-import { base } from 'viem/chains';
-import { erc20Abi, formatUnits } from 'viem';
+import { useAccount } from 'wagmi';
 import { 
   ConnectWallet, 
   Wallet, 
@@ -15,12 +13,9 @@ import {
   Name, 
   Identity 
 } from '@coinbase/onchainkit/identity';
-// Removed color import - using CSS classes instead
 import { Earn, useMorphoVault } from '@coinbase/onchainkit/earn';
-import { useVaultHistory } from '../hooks/useVaultHistory';
 import { useTokenPrices } from '../hooks/useTokenPrices';
 import { formatCurrency } from '../utils/formatCurrency';
-// ClaimRewardsButton removed - no longer using Morpho rewards
 import '@coinbase/onchainkit/styles.css';
 
 // Vault configurations - using verified addresses
@@ -42,26 +37,6 @@ const VAULTS = [
   },
 ];
 
-const LIQUID_TOKENS = [
-  {
-    symbol: 'USDC',
-    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
-    decimals: 6,
-    priceKey: 'usdc' as const,
-  },
-  {
-    symbol: 'cbBTC',
-    address: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf' as `0x${string}`,
-    decimals: 8,
-    priceKey: 'cbbtc' as const,
-  },
-  {
-    symbol: 'WETH',
-    address: '0x4200000000000000000000000000000000000006' as `0x${string}`,
-    decimals: 18,
-    priceKey: 'weth' as const,
-  },
-] as const;
 
 export default function Dashboard() {
   const { isConnected, address } = useAccount();
@@ -69,28 +44,7 @@ export default function Dashboard() {
   // Fetch token prices
   const tokenPrices = useTokenPrices();
 
-  const walletContracts = React.useMemo(() => {
-    if (!address) return [];
-    return LIQUID_TOKENS.map((token) => ({
-      abi: erc20Abi,
-      address: token.address,
-      functionName: 'balanceOf' as const,
-      args: [address],
-      chainId: base.id,
-    }));
-  }, [address]);
-
-  const { data: walletBalancesData } = useReadContracts({
-    contracts: walletContracts,
-    query: {
-      enabled: walletContracts.length > 0,
-      refetchInterval: 15000,
-    },
-  });
-
-  // Token prices available for calculations
-
-  // Fetch vault data from OnchainKit
+  // Fetch vault data from OnchainKit using useMorphoVault
   const usdcVault = useMorphoVault({
     vaultAddress: VAULTS[0].address,
     recipientAddress: address
@@ -134,51 +88,8 @@ export default function Dashboard() {
   const cbbtcBalanceUSD = getUSDValue(cbbtcVault.balance, 'cbBTC');
   const wethBalanceUSD = getUSDValue(wethVault.balance, 'WETH');
 
-  // USD balances calculated for each vault
-
-  const liquidBalanceUSD = React.useMemo(() => {
-    if (!walletBalancesData?.length) return 0;
-    return walletBalancesData.reduce((sum, entry, index) => {
-      const token = LIQUID_TOKENS[index];
-      if (!token || !entry?.result) return sum;
-      const tokenAmount = Number(formatUnits(entry.result as bigint, token.decimals));
-      const tokenPrice = tokenPrices[token.priceKey] || 0;
-      return sum + tokenAmount * tokenPrice;
-    }, 0);
-  }, [walletBalancesData, tokenPrices]);
-
-  // Fetch historical deposit/withdraw data for each vault (using USD values)
-  const usdcHistory = useVaultHistory(
-    VAULTS[0].address,
-    address,
-    usdcBalanceUSD,
-    usdcVault.asset.decimals || 6,
-    tokenPrices.usdc
-  );
-
-  const cbbtcHistory = useVaultHistory(
-    VAULTS[1].address,
-    address,
-    cbbtcBalanceUSD,
-    cbbtcVault.asset.decimals || 8,
-    tokenPrices.cbbtc
-  );
-
-  const wethHistory = useVaultHistory(
-    VAULTS[2].address,
-    address,
-    wethBalanceUSD,
-    wethVault.asset.decimals || 18,
-    tokenPrices.weth
-  );
-
-  // Helper function to get vault history by address
-  const getVaultHistory = (vaultAddress: string) => {
-    if (vaultAddress === VAULTS[0].address) return usdcHistory;
-    if (vaultAddress === VAULTS[1].address) return cbbtcHistory;
-    if (vaultAddress === VAULTS[2].address) return wethHistory;
-    return null;
-  };
+  // Total assets deposited across all three vaults in USD
+  const totalAssetsDeposited = usdcBalanceUSD + cbbtcBalanceUSD + wethBalanceUSD;
 
   // Helper function to get USD balance by vault address
   const getVaultBalanceUSD = (vaultAddress: string) => {
@@ -187,29 +98,6 @@ export default function Dashboard() {
     if (vaultAddress === VAULTS[2].address) return wethBalanceUSD;
     return 0;
   };
-
-  // Calculate portfolio totals using real historical data
-  // Total Deposited: sum of all deposits across all vaults in USD (gross deposits)
-  const totalDeposited = 
-    usdcHistory.totalDeposited + 
-    cbbtcHistory.totalDeposited + 
-    wethHistory.totalDeposited;
-
-  // Current Balance: total value across all vaults in USD
-  const currentBalance = 
-    usdcBalanceUSD + 
-    cbbtcBalanceUSD + 
-    wethBalanceUSD;
-  
-  // Total Interest Earned: actual interest earned to date
-  const totalInterestEarned = 
-    usdcHistory.interestEarned + 
-    cbbtcHistory.interestEarned + 
-    wethHistory.interestEarned;
-
-  // Portfolio totals calculated from vault history
-  const totalAssets = currentBalance + liquidBalanceUSD;
-  const totalEarned = totalInterestEarned;
 
   return (
     <div className="min-h-screen bg-slate-50 py-4 px-3 sm:py-8 sm:px-4">
@@ -249,48 +137,19 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto">
-        {/* Claim Rewards Button removed - no longer using Morpho rewards */}
-
-        {/* Portfolio Overview */}
+        {/* Total Assets Deposited */}
         {isConnected && (
           <div className="p-4 sm:p-6 md:p-8 bg-white rounded-xl shadow-sm mb-4 sm:mb-8">
             <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-4 sm:mb-6">
-              Portfolio Overview
+              Total Assets Deposited
             </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
-                  Total Assets
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
-                  {formatCurrency(totalAssets)}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Liquid + Morpho vault positions
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
-                  Total Deposited
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
-                  {formatCurrency(totalDeposited)}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Total amount deposited across all vaults
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
-                  Total Earned
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-emerald-500 break-words">
-                  {formatCurrency(totalEarned)}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Interest generated from Morpho
-                </p>
-              </div>
+            <div className="rounded-lg border border-slate-100 p-4 bg-slate-50/60">
+              <p className="text-xs sm:text-sm text-slate-500 font-medium mb-2">
+                Total assets deposited across all vaults
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold text-slate-900 break-words">
+                {formatCurrency(totalAssetsDeposited)}
+              </p>
             </div>
           </div>
         )}
@@ -308,24 +167,13 @@ export default function Dashboard() {
                 </h3>
                 
                 {/* Custom stats section */}
-                <div className="grid grid-cols-2 gap-3 p-2.5 sm:p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="p-2.5 sm:p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <div>
                     <div className="text-xs text-slate-500 font-medium mb-1">
                       Balance
                     </div>
                     <div className="text-sm sm:text-base font-semibold text-slate-900 break-words">
                       {formatCurrency(getVaultBalanceUSD(vault.address))}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500 font-medium mb-1">
-                      Interest Earned
-                    </div>
-                    <div className="text-sm sm:text-base font-semibold text-emerald-500 break-words">
-                      {(() => {
-                        const vaultHistory = getVaultHistory(vault.address);
-                        return formatCurrency(vaultHistory?.interestEarned || 0);
-                      })()}
                     </div>
                   </div>
                 </div>
