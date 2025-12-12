@@ -2,13 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { request, gql } from 'graphql-request';
 
-// Try different possible Morpho GraphQL endpoints
-const MORPHO_GRAPHQL_URLS = [
-  'https://api.morpho.org/graphql',
-  'https://graphql.morpho.org/graphql',
-  'https://api.morpho.xyz/graphql',
-];
-const MORPHO_GRAPHQL_URL = MORPHO_GRAPHQL_URLS[0];
+// Morpho Blue API (current, stable schema)
+const MORPHO_GRAPHQL_URL = 'https://blue-api.morpho.org/graphql';
 
 export type VaultData = {
   address: string;
@@ -17,36 +12,18 @@ export type VaultData = {
   apy?: number;
 };
 
-const GET_VAULT_QUERY = gql`
-  query GetVault($address: String!) {
-    vault(id: $address) {
-      id
+const GET_VAULT_BY_ADDRESS = gql`
+  query GetVaultByAddress($address: String!, $chainId: Int!) {
+    vaultByAddress(address: $address, chainId: $chainId) {
+      address
       name
       symbol
-      apy
-    }
-  }
-`;
-
-const GET_VAULTS_QUERY = gql`
-  query GetVaults($addresses: [String!]!) {
-    vaults(where: { id_in: $addresses }) {
-      id
-      name
-      symbol
-      apy
-    }
-  }
-`;
-
-// Alternative query structure in case the API uses different field names
-const GET_VAULTS_QUERY_ALT = gql`
-  query GetVaults($addresses: [String!]!) {
-    markets(where: { id_in: $addresses }) {
-      id
-      name
-      symbol
-      supplyAPY
+      state {
+        netApy
+      }
+      asset {
+        symbol
+      }
     }
   }
 `;
@@ -72,10 +49,29 @@ export function useMorphoVaultData(vaultAddress: string) {
     queryKey: ['morphoVault', vaultAddress],
     queryFn: async () => {
       try {
-        const data = await request<{ vault: VaultData }>(MORPHO_GRAPHQL_URL, GET_VAULT_QUERY, {
+        const data = await request<{
+          vaultByAddress: {
+            address: string;
+            name: string;
+            symbol: string;
+            state?: { netApy?: number };
+          } | null;
+        }>(MORPHO_GRAPHQL_URL, GET_VAULT_BY_ADDRESS, {
           address: vaultAddress.toLowerCase(),
+          chainId: BASE_CHAIN_ID,
         });
-        return data.vault;
+
+        if (data.vaultByAddress) {
+          const vault = data.vaultByAddress;
+          return {
+            address: vault.address.toLowerCase(),
+            name: vault.name,
+            symbol: vault.symbol,
+            apy: vault.state?.netApy,
+          } as VaultData;
+        }
+
+        throw new Error('Vault not found');
       } catch (error) {
         console.error('Error fetching vault data:', error);
         // Return fallback data if GraphQL fails
@@ -115,52 +111,49 @@ export function useMorphoVaultsData(vaultAddresses: string[]) {
       const v1Addresses = addresses.filter(addr => !isV2Vault(addr));
       const v2Addresses = addresses.filter(addr => isV2Vault(addr));
 
-      // Fetch V1 vaults using the original query
+      // Fetch V1 vaults using the current Blue API schema
       if (v1Addresses.length > 0) {
         try {
-          const data = await request<{ vaults: VaultData[] }>(MORPHO_GRAPHQL_URL, GET_VAULTS_QUERY, {
-            addresses: v1Addresses,
-          });
-          if (data.vaults && data.vaults.length > 0) {
-            data.vaults.forEach((vault) => {
-              const vaultWithId = vault as VaultData & { id?: string };
-              // GraphQL response has 'id' field, not 'address'
-              // The query explicitly requests 'id', so it should always be present
-              if (!vaultWithId.id) {
-                console.warn('Vault missing id field, skipping:', vault);
-                return;
+          const v1Promises = v1Addresses.map(async (address) => {
+            try {
+              const data = await request<{
+                vaultByAddress: {
+                  address: string;
+                  name: string;
+                  symbol: string;
+                  state?: { netApy?: number };
+                } | null;
+              }>(
+                MORPHO_GRAPHQL_URL,
+                GET_VAULT_BY_ADDRESS,
+                {
+                  address,
+                  chainId: BASE_CHAIN_ID,
+                }
+              );
+
+              if (data.vaultByAddress) {
+                return {
+                  address: data.vaultByAddress.address.toLowerCase(),
+                  name: data.vaultByAddress.name,
+                  symbol: data.vaultByAddress.symbol,
+                  apy: data.vaultByAddress.state?.netApy,
+                } as VaultData;
               }
-              
-              results.push({
-                address: vaultWithId.id.toLowerCase(),
-                name: vault.name,
-                symbol: vault.symbol,
-                apy: vault.apy,
-              });
-            });
-          }
-        } catch (error) {
-          console.warn('V1 vaults GraphQL query failed, trying alternative:', error);
-          // Try alternative query structure for V1
-          try {
-            const data = await request<{ markets: Array<{ id: string; name?: string; symbol?: string; supplyAPY?: number }> }>(
-              MORPHO_GRAPHQL_URL,
-              GET_VAULTS_QUERY_ALT,
-              { addresses: v1Addresses }
-            );
-            if (data.markets && data.markets.length > 0) {
-              data.markets.forEach((market) => {
-                results.push({
-                  address: market.id,
-                  name: market.name || market.symbol || 'Vault',
-                  symbol: market.symbol || 'VAULT',
-                  apy: market.supplyAPY,
-                });
-              });
+            } catch (error) {
+              console.warn(`Failed to fetch V1 vault ${address}:`, error);
             }
-          } catch (altError) {
-            console.warn('Alternative V1 query also failed:', altError);
-          }
+            return null;
+          });
+
+          const v1Results = await Promise.all(v1Promises);
+          v1Results.forEach((result) => {
+            if (result) {
+              results.push(result);
+            }
+          });
+        } catch (error) {
+          console.warn('V1 vaults GraphQL query failed:', error);
         }
       }
 
