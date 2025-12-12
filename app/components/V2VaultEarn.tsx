@@ -208,7 +208,8 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     }
   };
 
-  const isLoading = vaultData.isLoading || isPendingTx || isConfirming || isApproving || isApprovingConfirming;
+  // Only disable buttons/inputs when actively submitting transactions, not when refetching data
+  const isSubmitting = isPendingTx || isConfirming || isApproving || isApprovingConfirming;
 
   if (!isConnected) {
     return (
@@ -279,12 +280,12 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
             step="0.000001"
             min="0"
             className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isLoading}
+            disabled={isSubmitting}
           />
           <button
             onClick={handleMax}
             className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
             Max
           </button>
@@ -295,7 +296,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           needsApproval && !isApproved ? (
             <button
               onClick={handleApprove}
-              disabled={!amount || parseFloat(amount) <= 0 || isLoading || assetBalanceFormatted < parseFloat(amount || '0')}
+              disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || assetBalanceFormatted < parseFloat(amount || '0')}
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isApproving || isApprovingConfirming ? 'Approving...' : 'Approve'}
@@ -303,7 +304,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           ) : (
             <button
               onClick={handleDeposit}
-              disabled={!amount || parseFloat(amount) <= 0 || isLoading || assetBalanceFormatted < parseFloat(amount || '0') || needsApproval}
+              disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || assetBalanceFormatted < parseFloat(amount || '0') || needsApproval}
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPendingTx || isConfirming ? 'Processing...' : 'Deposit'}
@@ -312,10 +313,10 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         ) : (
           <button
             onClick={handleWithdraw}
-            disabled={!amount || parseFloat(amount) <= 0 || isLoading || balance < parseFloat(amount || '0')}
+            disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || balance < parseFloat(amount || '0')}
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Processing...' : 'Withdraw'}
+            {isPendingTx || isConfirming ? 'Processing...' : 'Withdraw'}
           </button>
         )}
       </div>
