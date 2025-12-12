@@ -89,6 +89,24 @@ export function useMorphoVaultV2(
     },
   });
 
+  // Get asset decimals (important: assets use asset decimals, not vault decimals)
+  const { data: assetDecimals } = useReadContract({
+    address: assetAddress,
+    abi: [
+      {
+        name: 'decimals',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ name: '', type: 'uint8' }],
+      },
+    ],
+    functionName: 'decimals',
+    query: {
+      enabled: !!assetAddress,
+    },
+  });
+
   // Convert shares to assets
   const { data: assets, isLoading: isLoadingAssets, error: assetsError } = useReadContract({
     address: vaultAddress,
@@ -102,14 +120,17 @@ export function useMorphoVaultV2(
 
   const isLoading = isLoadingShares || isLoadingDecimals || isLoadingAssets;
   const error = sharesError || assetsError || null;
-  const vaultDecimals = decimals ?? 18; // Default to 18 if not available
+  const vaultDecimals = decimals ?? 18; // Vault decimals for shares
+  const assetDecimalsValue = assetDecimals ?? 18; // Asset decimals for balance display
 
-  // Calculate balance: if we have assets directly, use that; otherwise use shares converted
+  // Calculate balance: convertToAssets returns assets in asset decimals
   let balance: string | number = 0;
-  if (assets && vaultDecimals) {
-    balance = parseFloat(formatUnits(assets, vaultDecimals));
-  } else if (shares && vaultDecimals) {
-    // Fallback: use shares if convertToAssets fails (shouldn't happen for ERC-4626, but just in case)
+  if (assets && assetDecimalsValue) {
+    // convertToAssets returns assets in asset decimals
+    balance = parseFloat(formatUnits(assets, assetDecimalsValue));
+  } else if (shares && shares > 0n) {
+    // Fallback: if convertToAssets fails, try to convert shares using vault decimals
+    // This is less accurate but better than showing 0
     balance = parseFloat(formatUnits(shares, vaultDecimals));
   }
 
