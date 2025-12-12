@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId, useSwitchChain } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { formatUnits, parseUnits, Address, erc4626Abi } from 'viem';
 import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
@@ -14,6 +14,9 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   const [amount, setAmount] = useState('');
   const [isDeposit, setIsDeposit] = useState(true);
   const { isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const isOnBase = chainId === base.id;
   
   const vaultData = useMorphoVaultV2(vaultAddress, recipientAddress);
   
@@ -175,6 +178,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
 
   const handleDeposit = async () => {
     if (!amount || !recipientAddress || !assetAddress) return;
+    if (!isOnBase) return;
     
     // Don't proceed if approval is needed - user must approve first via the approve button
     // The UI already shows the approve button when needsApproval is true
@@ -199,6 +203,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
 
   const handleWithdraw = async () => {
     if (!amount || !recipientAddress) return;
+    if (!isOnBase) return;
     
     try {
       const amountWei = parseUnits(amount, decimals);
@@ -225,7 +230,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   };
 
   // Only disable buttons/inputs when actively submitting transactions, not when refetching data
-  const isSubmitting = isPendingTx || isConfirming || isApproving || isApprovingConfirming;
+  const isSubmitting = isPendingTx || isConfirming || isApproving || isApprovingConfirming || isSwitching;
 
   if (!isConnected) {
     return (
@@ -251,6 +256,18 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           <div className="flex justify-between items-center text-xs text-slate-500">
             <span>Asset Balance</span>
             <span>{assetBalanceFormatted.toFixed(6)}</span>
+          </div>
+        )}
+        {!isOnBase && (
+          <div className="mt-3 flex items-center justify-between text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded">
+            <span>Wrong network — switch to Base to continue.</span>
+            <button
+              onClick={() => switchChain?.({ chainId: base.id })}
+              className="text-blue-600 hover:text-blue-700 font-semibold disabled:opacity-50"
+              disabled={isSwitching || !switchChain}
+            >
+              {isSwitching ? 'Switching...' : 'Switch'}
+            </button>
           </div>
         )}
       </div>
@@ -296,7 +313,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
             step="0.000001"
             min="0"
             className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isSubmitting}
+          disabled={isSubmitting || !isOnBase}
           />
           <button
             onClick={handleMax}
@@ -329,6 +346,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
                 !amount || 
                 parseAmount(amount) <= 0 || 
                 isSubmitting || 
+                !isOnBase ||
                 (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount)) || 
                 needsApproval
               }
@@ -341,10 +359,11 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           <button
             onClick={handleWithdraw}
             disabled={
-              !amount || 
-              parseAmount(amount) <= 0 || 
-              isSubmitting || 
-              balance < parseAmount(amount)
+                !amount || 
+                parseAmount(amount) <= 0 || 
+                isSubmitting || 
+                !isOnBase ||
+                balance < parseAmount(amount)
             }
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
