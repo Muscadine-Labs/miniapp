@@ -85,18 +85,15 @@ export default function Dashboard() {
     return vaultDataMap.get(vaultAddress.toLowerCase());
   };
 
-  // Map vault addresses to their token symbols for USD conversion
-  const getTokenSymbol = (vaultAddress: string): string => {
-    const vaultData = getVaultData(vaultAddress);
-    return vaultData?.symbol?.toUpperCase() || '';
-  };
-
   // Helper to convert token balance to USD
   const getUSDValue = React.useCallback((balance: string | number | undefined, vaultAddress: string): number => {
     const balanceNum = typeof balance === 'string' ? parseFloat(balance) : (balance || 0);
     if (balanceNum === 0) return 0;
 
-    const symbol = getTokenSymbol(vaultAddress);
+    // Get token symbol from vault data
+    const vaultData = vaultDataMap.get(vaultAddress.toLowerCase());
+    const symbol = vaultData?.symbol?.toUpperCase() || '';
+    
     switch (symbol) {
       case 'USDC':
         return balanceNum * tokenPrices.usdc;
@@ -111,10 +108,16 @@ export default function Dashboard() {
   }, [tokenPrices, vaultDataMap]);
 
   // Calculate total assets deposited across all vaults in USD
-  const allVaults = [v2Prime1, v2Prime2, v2Prime3, v1Vault1, v1Vault2, v1Vault3];
+  // Memoize vault addresses array
   const vaultAddresses = React.useMemo(
     () => [...V2_PRIME_VAULTS, ...V1_VAULTS],
     []
+  );
+
+  // Memoize all vaults array to prevent recreation on every render
+  const allVaults = React.useMemo(
+    () => [v2Prime1, v2Prime2, v2Prime3, v1Vault1, v1Vault2, v1Vault3],
+    [v2Prime1, v2Prime2, v2Prime3, v1Vault1, v1Vault2, v1Vault3]
   );
   const totalAssetsDeposited = React.useMemo(() => {
     return allVaults.reduce((sum, vault, index) => {
