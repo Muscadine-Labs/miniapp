@@ -17,11 +17,12 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   
   const vaultData = useMorphoVaultV2(vaultAddress, recipientAddress);
   
-  // Get asset address from vault
+  // Get asset address from vault (Base chain)
   const { data: assetAddress } = useReadContract({
     address: vaultAddress,
     abi: erc4626Abi,
     functionName: 'asset',
+    chainId: base.id,
   });
 
   // Get asset decimals
@@ -37,12 +38,13 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
       },
     ],
     functionName: 'decimals',
+    chainId: base.id,
     query: {
       enabled: !!assetAddress,
     },
   });
 
-  const decimals = assetDecimals ?? 18;
+  const decimals = assetDecimals !== undefined ? Number(assetDecimals) : 18;
   const balance = typeof vaultData.balance === 'string' 
     ? parseFloat(vaultData.balance) 
     : (vaultData.balance || 0);
@@ -61,6 +63,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     ],
     functionName: 'balanceOf',
     args: recipientAddress ? [recipientAddress] : undefined,
+    chainId: base.id,
     query: {
       enabled: !!assetAddress && !!recipientAddress,
     },
@@ -87,13 +90,15 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     ],
     functionName: 'allowance',
     args: recipientAddress && vaultAddress ? [recipientAddress, vaultAddress] : undefined,
+    chainId: base.id,
     query: {
       enabled: !!assetAddress && !!recipientAddress && !!vaultAddress,
     },
   });
 
   const needsApproval = React.useMemo(() => {
-    if (!isDeposit || !amount || allowance === undefined) return false;
+    if (!isDeposit || !amount) return false;
+    if (allowance === undefined) return true;
     try {
       const amountNum = parseFloat(amount);
       if (isNaN(amountNum) || amountNum <= 0) return false;
@@ -111,13 +116,13 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   };
 
   // Approve transaction (for deposits)
-  const { writeContract: approve, data: approveHash, isPending: isApproving } = useWriteContract();
+  const { writeContract: approve, data: approveHash, isPending: isApproving, error: approveError } = useWriteContract();
   const { isLoading: isApprovingConfirming, isSuccess: isApproved } = useWaitForTransactionReceipt({
     hash: approveHash,
   });
 
   // Deposit/Withdraw transaction
-  const { writeContract: depositOrWithdraw, data: txHash, isPending: isPendingTx } = useWriteContract();
+  const { writeContract: depositOrWithdraw, data: txHash, isPending: isPendingTx, error: txError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
   });
@@ -353,6 +358,13 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-800">
             Transaction submitted! {isConfirming ? 'Confirming...' : 'Confirmed'}
+          </p>
+        </div>
+      )}
+      {(approveError || txError) && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+          <p className="text-sm text-rose-800 break-words">
+            {(approveError ?? txError)?.message}
           </p>
         </div>
       )}
