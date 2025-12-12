@@ -19,6 +19,8 @@
     "@farcaster/quick-auth": "^0.0.7",
     "@tanstack/react-query": "^5.81.5",
     "axios": "^1.12.2",
+    "graphql": "^16.12.0",
+    "graphql-request": "^7.4.0",
     "next": "15.5.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
