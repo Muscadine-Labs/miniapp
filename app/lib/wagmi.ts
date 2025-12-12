@@ -1,5 +1,5 @@
 "use client";
-import { createConfig, fallback, http } from "wagmi";
+import { createConfig, fallback, http, createStorage } from "wagmi";
 import { coinbaseWallet, injected, walletConnect } from "wagmi/connectors";
 import { base } from "wagmi/chains";
 
@@ -30,10 +30,18 @@ const connectors = [
     : []),
 ] as const;
 
+// Create storage for persisting wallet connection state
+// Uses localStorage to persist connection across page refreshes
+const storage = createStorage({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: 'wagmi',
+});
+
 export const wagmiConfig = createConfig({
   chains: [base],
   connectors,
   ssr: true,
+  storage,
   transports: {
     [base.id]: fallback([
       // Primary: Alchemy (more reliable)

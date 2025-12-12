@@ -16,6 +16,7 @@ import {
 import { Earn, useMorphoVault } from '@coinbase/onchainkit/earn';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useMorphoVaultsData, type VaultData } from '../hooks/useMorphoVaultData';
+import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
 import '@coinbase/onchainkit/styles.css';
 
 // V2 Prime vaults
@@ -51,19 +52,13 @@ export default function Dashboard() {
     return map;
   }, [vaultsData]);
 
-  // Fetch vault balances from OnchainKit for all vaults (hooks must be called at top level)
-  const v2Prime1 = useMorphoVault({
-    vaultAddress: V2_PRIME_VAULTS[0],
-    recipientAddress: address
-  });
-  const v2Prime2 = useMorphoVault({
-    vaultAddress: V2_PRIME_VAULTS[1],
-    recipientAddress: address
-  });
-  const v2Prime3 = useMorphoVault({
-    vaultAddress: V2_PRIME_VAULTS[2],
-    recipientAddress: address
-  });
+  // Fetch vault balances - Use custom V2 hook for V2 vaults since OnchainKit's useMorphoVault
+  // may not be compatible with Morpho V2 vaults. The Earn component should still work for UI.
+  const v2Prime1 = useMorphoVaultV2(V2_PRIME_VAULTS[0], address);
+  const v2Prime2 = useMorphoVaultV2(V2_PRIME_VAULTS[1], address);
+  const v2Prime3 = useMorphoVaultV2(V2_PRIME_VAULTS[2], address);
+
+  // V1 vaults use OnchainKit hook (fully supported)
   const v1Vault1 = useMorphoVault({
     vaultAddress: V1_VAULTS[0],
     recipientAddress: address
