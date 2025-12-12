@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - minikit-config re-exports from root, path resolution works at runtime
-import { minikitConfig } from '../../minikit-config';
+import { minikitConfig } from '../../../minikit.config';
 
 export const revalidate = 3600;
 

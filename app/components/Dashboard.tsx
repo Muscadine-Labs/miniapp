@@ -17,6 +17,7 @@ import { Earn, useMorphoVault } from '@coinbase/onchainkit/earn';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useMorphoVaultsData, type VaultData } from '../hooks/useMorphoVaultData';
 import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
+import { V2VaultEarn } from './V2VaultEarn';
 import '@coinbase/onchainkit/styles.css';
 
 // V2 Prime vaults
@@ -170,9 +171,9 @@ export default function Dashboard() {
                       )}
                     </div>
                   )}
-                  <Earn
+                  <V2VaultEarn
                     vaultAddress={vaultAddress}
-                    isSponsored={true}
+                    recipientAddress={address}
                   />
                 </div>
               );
