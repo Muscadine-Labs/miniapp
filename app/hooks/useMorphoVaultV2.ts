@@ -90,7 +90,7 @@ export function useMorphoVaultV2(
   });
 
   // Get asset decimals (important: assets use asset decimals, not vault decimals)
-  const { data: assetDecimals } = useReadContract({
+  const { data: assetDecimals, isLoading: isLoadingAssetDecimals } = useReadContract({
     address: assetAddress,
     abi: [
       {
@@ -118,7 +118,7 @@ export function useMorphoVaultV2(
     },
   });
 
-  const isLoading = isLoadingShares || isLoadingDecimals || isLoadingAssets;
+  const isLoading = isLoadingShares || isLoadingDecimals || isLoadingAssetDecimals || isLoadingAssets;
   const error = sharesError || assetsError || null;
   const vaultDecimals = decimals ?? 18; // Vault decimals for shares
   const assetDecimalsValue = assetDecimals ?? 18; // Asset decimals for balance display

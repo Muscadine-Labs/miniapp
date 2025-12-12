@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { formatUnits, parseUnits, Address, erc4626Abi } from 'viem';
 import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
 
@@ -134,6 +135,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         ],
         functionName: 'approve',
         args: [vaultAddress, amountWei],
+        chainId: base.id,
       });
     } catch (error) {
       console.error('Approve error:', error);
@@ -141,7 +143,13 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   };
 
   const handleDeposit = async () => {
-    if (!amount || !recipientAddress) return;
+    if (!amount || !recipientAddress || !assetAddress) return;
+    
+    // Ensure approval is done first
+    if (needsApproval) {
+      await handleApprove();
+      return;
+    }
     
     try {
       const amountWei = parseUnits(amount, decimals);
@@ -150,6 +158,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         abi: erc4626Abi,
         functionName: 'deposit',
         args: [amountWei, recipientAddress],
+        chainId: base.id,
       });
     } catch (error) {
       console.error('Deposit error:', error);
@@ -166,6 +175,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         abi: erc4626Abi,
         functionName: 'withdraw',
         args: [amountWei, recipientAddress, recipientAddress],
+        chainId: base.id,
       });
     } catch (error) {
       console.error('Withdraw error:', error);
@@ -270,15 +280,15 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
               disabled={!amount || parseFloat(amount) <= 0 || isLoading || assetBalanceFormatted < parseFloat(amount || '0')}
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Processing...' : 'Approve'}
+              {isApproving || isApprovingConfirming ? 'Approving...' : 'Approve'}
             </button>
           ) : (
             <button
               onClick={handleDeposit}
-              disabled={!amount || parseFloat(amount) <= 0 || isLoading || assetBalanceFormatted < parseFloat(amount || '0')}
+              disabled={!amount || parseFloat(amount) <= 0 || isLoading || assetBalanceFormatted < parseFloat(amount || '0') || needsApproval}
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Processing...' : 'Deposit'}
+              {isPendingTx || isConfirming ? 'Processing...' : 'Deposit'}
             </button>
           )
         ) : (
