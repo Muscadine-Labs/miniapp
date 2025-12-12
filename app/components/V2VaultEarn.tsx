@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { formatUnits, parseUnits, Address, erc4626Abi } from 'viem';
@@ -48,7 +48,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     : (vaultData.balance || 0);
 
   // Get asset balance for deposits
-  const { data: assetBalance } = useReadContract({
+  const { data: assetBalance, refetch: refetchAssetBalance } = useReadContract({
     address: assetAddress,
     abi: [
       {
@@ -71,7 +71,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     : 0;
 
   // Check allowance for deposits
-  const { data: allowance } = useReadContract({
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: assetAddress,
     abi: [
       {
@@ -110,9 +110,27 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
 
   // Deposit/Withdraw transaction
   const { writeContract: depositOrWithdraw, data: txHash, isPending: isPendingTx } = useWriteContract();
-  const { isLoading: isConfirming } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
   });
+
+  // Refetch data when transactions complete
+  useEffect(() => {
+    if (isApproved) {
+      // Refetch allowance after approval
+      refetchAllowance();
+    }
+  }, [isApproved, refetchAllowance]);
+
+  useEffect(() => {
+    if (isTxSuccess) {
+      // Refetch balances and allowance after deposit/withdraw
+      refetchAssetBalance();
+      refetchAllowance();
+      // Reset amount after successful transaction
+      setAmount('');
+    }
+  }, [isTxSuccess, refetchAssetBalance, refetchAllowance]);
 
   const handleApprove = async () => {
     if (!assetAddress || !amount || !recipientAddress) return;
