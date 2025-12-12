@@ -1,28 +1,47 @@
 "use client";
-import { createConfig, fallback, http } from "wagmi";
-import { coinbaseWallet, injected } from "wagmi/connectors";
+import { createConfig, fallback, http, createStorage } from "wagmi";
+import { coinbaseWallet, injected, walletConnect } from "wagmi/connectors";
 import { base } from "wagmi/chains";
 
-// Create connectors without walletConnect to avoid SSR issues
-// WalletConnect requires Node.js modules that cause build failures during SSR
-// Users can still connect with Coinbase Wallet and injected wallets
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+
 const connectors = [
   coinbaseWallet({
-    appName: "Muscadine",
+    appName: "Muscadine DeFi",
     preference: "all",
     chainId: base.id,
   }),
   injected({
     shimDisconnect: true,
   }),
-  // Note: walletConnect is excluded to prevent SSR build issues
-  // If WalletConnect support is needed, it should be added dynamically on the client side
+  ...(walletConnectProjectId
+    ? [
+        walletConnect({
+          projectId: walletConnectProjectId,
+          metadata: {
+            name: "Muscadine DeFi",
+            description: "Lend and earn on Base",
+            url: "https://miniapp.muscadine.io",
+            icons: ["https://miniapp.muscadine.io/icon.png"],
+          },
+          showQrModal: true,
+        }),
+      ]
+    : []),
 ] as const;
+
+// Create storage for persisting wallet connection state
+// Uses localStorage to persist connection across page refreshes
+const storage = createStorage({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: 'wagmi',
+});
 
 export const wagmiConfig = createConfig({
   chains: [base],
   connectors,
-  ssr: false,
+  ssr: true,
+  storage,
   transports: {
     [base.id]: fallback([
       // Primary: Alchemy (more reliable)
