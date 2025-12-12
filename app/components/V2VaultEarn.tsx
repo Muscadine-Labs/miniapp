@@ -171,9 +171,10 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   const handleDeposit = async () => {
     if (!amount || !recipientAddress || !assetAddress) return;
     
-    // Ensure approval is done first
+    // Don't proceed if approval is needed - user must approve first via the approve button
+    // The UI already shows the approve button when needsApproval is true
     if (needsApproval) {
-      await handleApprove();
+      console.warn('Approval required before deposit');
       return;
     }
     

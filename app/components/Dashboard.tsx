@@ -17,6 +17,7 @@ import { Earn, useMorphoVault } from '@coinbase/onchainkit/earn';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useMorphoVaultsData, type VaultData } from '../hooks/useMorphoVaultData';
 import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
+import { useTokenPrices } from '../hooks/useTokenPrices';
 import { V2VaultEarn } from './V2VaultEarn';
 import '@coinbase/onchainkit/styles.css';
 
@@ -38,11 +39,17 @@ const V1_VAULTS = [
 export default function Dashboard() {
   const { isConnected, address } = useAccount();
 
-  // Get all vault addresses
-  const allVaultAddresses = [...V2_PRIME_VAULTS, ...V1_VAULTS];
+  // Memoize vault addresses to prevent unnecessary refetches
+  const allVaultAddresses = React.useMemo(
+    () => [...V2_PRIME_VAULTS, ...V1_VAULTS],
+    []
+  );
 
   // Fetch vault metadata from Morpho GraphQL
   const { data: vaultsData = [], isLoading: isLoadingVaultData } = useMorphoVaultsData(allVaultAddresses);
+
+  // Fetch token prices for USD conversion
+  const tokenPrices = useTokenPrices();
 
   // Create a map of address to vault data for quick lookup
   const vaultDataMap = React.useMemo(() => {
@@ -73,17 +80,49 @@ export default function Dashboard() {
     recipientAddress: address
   });
 
-  // Calculate total assets deposited across all vaults
-  const allVaults = [v2Prime1, v2Prime2, v2Prime3, v1Vault1, v1Vault2, v1Vault3];
-  const totalAssetsDeposited = allVaults.reduce((sum, vault) => {
-    const balance = typeof vault.balance === 'string' ? parseFloat(vault.balance) : (vault.balance || 0);
-    return sum + balance;
-    }, 0);
-
   // Helper to get vault data from GraphQL
   const getVaultData = (vaultAddress: string): VaultData | undefined => {
     return vaultDataMap.get(vaultAddress.toLowerCase());
   };
+
+  // Map vault addresses to their token symbols for USD conversion
+  const getTokenSymbol = (vaultAddress: string): string => {
+    const vaultData = getVaultData(vaultAddress);
+    return vaultData?.symbol?.toUpperCase() || '';
+  };
+
+  // Helper to convert token balance to USD
+  const getUSDValue = React.useCallback((balance: string | number | undefined, vaultAddress: string): number => {
+    const balanceNum = typeof balance === 'string' ? parseFloat(balance) : (balance || 0);
+    if (balanceNum === 0) return 0;
+
+    const symbol = getTokenSymbol(vaultAddress);
+    switch (symbol) {
+      case 'USDC':
+        return balanceNum * tokenPrices.usdc;
+      case 'CBBTC':
+        return balanceNum * tokenPrices.cbbtc;
+      case 'WETH':
+        return balanceNum * tokenPrices.weth;
+      default:
+        // For V2 vaults or unknown tokens, assume 1:1 with USDC as fallback
+        return balanceNum;
+    }
+  }, [tokenPrices, vaultDataMap]);
+
+  // Calculate total assets deposited across all vaults in USD
+  const allVaults = [v2Prime1, v2Prime2, v2Prime3, v1Vault1, v1Vault2, v1Vault3];
+  const vaultAddresses = React.useMemo(
+    () => [...V2_PRIME_VAULTS, ...V1_VAULTS],
+    []
+  );
+  const totalAssetsDeposited = React.useMemo(() => {
+    return allVaults.reduce((sum, vault, index) => {
+      const balance = typeof vault.balance === 'string' ? parseFloat(vault.balance) : (vault.balance || 0);
+      const vaultAddress = vaultAddresses[index];
+      return sum + getUSDValue(balance, vaultAddress);
+    }, 0);
+  }, [allVaults, getUSDValue, vaultAddresses]);
 
   return (
     <div className="min-h-screen bg-slate-50 py-4 px-3 sm:py-8 sm:px-4">
