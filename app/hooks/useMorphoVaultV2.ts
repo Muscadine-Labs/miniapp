@@ -1,5 +1,6 @@
 "use client";
 import { useReadContract } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { formatUnits } from 'viem';
 import { Address } from 'viem';
 
@@ -64,6 +65,7 @@ export function useMorphoVaultV2(
     abi: ERC4626_ABI,
     functionName: 'balanceOf',
     args: recipientAddress ? [recipientAddress] : undefined,
+    chainId: base.id,
     query: {
       enabled: !!vaultAddress && !!recipientAddress,
     },
@@ -74,6 +76,7 @@ export function useMorphoVaultV2(
     address: vaultAddress,
     abi: ERC4626_ABI,
     functionName: 'decimals',
+    chainId: base.id,
     query: {
       enabled: !!vaultAddress,
     },
@@ -84,6 +87,7 @@ export function useMorphoVaultV2(
     address: vaultAddress,
     abi: ERC4626_ABI,
     functionName: 'asset',
+    chainId: base.id,
     query: {
       enabled: !!vaultAddress,
     },
@@ -102,6 +106,7 @@ export function useMorphoVaultV2(
       },
     ],
     functionName: 'decimals',
+    chainId: base.id,
     query: {
       enabled: !!assetAddress,
     },
@@ -113,6 +118,7 @@ export function useMorphoVaultV2(
     abi: ERC4626_ABI,
     functionName: 'convertToAssets',
     args: shares ? [shares] : undefined,
+    chainId: base.id,
     query: {
       enabled: !!vaultAddress && !!shares && shares > 0n,
     },
