@@ -66,9 +66,9 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     },
   });
 
-  const assetBalanceFormatted = assetBalance 
+  const assetBalanceFormatted = assetBalance !== undefined
     ? parseFloat(formatUnits(assetBalance, decimals))
-    : 0;
+    : null;
 
   // Check allowance for deposits
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
@@ -95,12 +95,20 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
   const needsApproval = React.useMemo(() => {
     if (!isDeposit || !amount || allowance === undefined) return false;
     try {
+      const amountNum = parseFloat(amount);
+      if (isNaN(amountNum) || amountNum <= 0) return false;
       const amountWei = parseUnits(amount, decimals);
       return amountWei > allowance;
     } catch {
       return false;
     }
   }, [isDeposit, amount, allowance, decimals]);
+
+  // Helper to parse amount safely
+  const parseAmount = (val: string): number => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+  };
 
   // Approve transaction (for deposits)
   const { writeContract: approve, data: approveHash, isPending: isApproving } = useWriteContract();
@@ -202,7 +210,9 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
 
   const handleMax = () => {
     if (isDeposit) {
-      setAmount(assetBalanceFormatted.toFixed(6));
+      if (assetBalanceFormatted !== null) {
+        setAmount(assetBalanceFormatted.toFixed(6));
+      }
     } else {
       setAmount(balance.toFixed(6));
     }
@@ -231,7 +241,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
             {vaultData.isLoading ? '...' : balance.toFixed(6)}
           </span>
         </div>
-        {!isDeposit && assetBalanceFormatted > 0 && (
+        {!isDeposit && assetBalanceFormatted !== null && assetBalanceFormatted > 0 && (
           <div className="flex justify-between items-center text-xs text-slate-500">
             <span>Asset Balance</span>
             <span>{assetBalanceFormatted.toFixed(6)}</span>
@@ -296,7 +306,12 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           needsApproval && !isApproved ? (
             <button
               onClick={handleApprove}
-              disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || assetBalanceFormatted < parseFloat(amount || '0')}
+              disabled={
+                !amount || 
+                parseAmount(amount) <= 0 || 
+                isSubmitting || 
+                (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount))
+              }
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isApproving || isApprovingConfirming ? 'Approving...' : 'Approve'}
@@ -304,7 +319,13 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
           ) : (
             <button
               onClick={handleDeposit}
-              disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || assetBalanceFormatted < parseFloat(amount || '0') || needsApproval}
+              disabled={
+                !amount || 
+                parseAmount(amount) <= 0 || 
+                isSubmitting || 
+                (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount)) || 
+                needsApproval
+              }
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPendingTx || isConfirming ? 'Processing...' : 'Deposit'}
@@ -313,7 +334,12 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
         ) : (
           <button
             onClick={handleWithdraw}
-            disabled={!amount || parseFloat(amount) <= 0 || isSubmitting || balance < parseFloat(amount || '0')}
+            disabled={
+              !amount || 
+              parseAmount(amount) <= 0 || 
+              isSubmitting || 
+              balance < parseAmount(amount)
+            }
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPendingTx || isConfirming ? 'Processing...' : 'Withdraw'}
