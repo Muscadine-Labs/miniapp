@@ -180,19 +180,27 @@ export const useVaultSimulationState = (
     if (vaultAddress) activeTokens.add(vaultAddress);
 
     // Add tokens from markets
-    marketIds.forEach((mId) => {
-      try {
-        const params = MarketParams.get(mId);
-        if (params.collateralToken) {
-          activeTokens.add(params.collateralToken);
+    // Ensure marketIds is an array and handle SSR edge cases
+    if (Array.isArray(marketIds) && marketIds.length > 0) {
+      marketIds.forEach((mId) => {
+        try {
+          // Validate market ID format before calling MarketParams.get
+          if (!mId || typeof mId !== 'string') return;
+          
+          const params = MarketParams.get(mId);
+          if (params && typeof params === 'object') {
+            if (params.collateralToken) {
+              activeTokens.add(params.collateralToken);
+            }
+            if (params.loanToken) {
+              activeTokens.add(params.loanToken);
+            }
+          }
+        } catch {
+          // Silently ignore unknown markets or invalid market IDs
         }
-        if (params.loanToken) {
-          activeTokens.add(params.loanToken);
-        }
-      } catch {
-        // Silently ignore unknown markets
-      }
-    });
+      });
+    }
 
     return Array.from(activeTokens);
   }, [assetAddress, vaultAddress, marketIds]);
@@ -244,11 +252,28 @@ export const useVaultSimulationState = (
     !isLengthLoading &&
     !isQueueLoading;
 
+  // Ensure all arrays are valid before passing to useSimulationState
+  const safeMarketIds = useMemo(() => {
+    return Array.isArray(marketIds) ? marketIds.filter((id): id is MarketId => !!id && typeof id === 'string') : [];
+  }, [marketIds]);
+
+  const safeUsers = useMemo(() => {
+    return Array.isArray(users) ? users.filter((u): u is `0x${string}` => !!u && typeof u === 'string') : [];
+  }, [users]);
+
+  const safeTokens = useMemo(() => {
+    return Array.isArray(tokens) ? tokens.filter((t): t is `0x${string}` => !!t && typeof t === 'string') : [];
+  }, [tokens]);
+
+  const safeVaults = useMemo(() => {
+    return Array.isArray(vaults) ? vaults.filter((v): v is `0x${string}` => !!v && typeof v === 'string') : [];
+  }, [vaults]);
+
   const simulation = useSimulationState({
-    marketIds: marketIds as MarketId[],
-    users: users as `0x${string}`[],
-    tokens: tokens as `0x${string}`[],
-    vaults: vaults as `0x${string}`[],
+    marketIds: safeMarketIds,
+    users: safeUsers,
+    tokens: safeTokens,
+    vaults: safeVaults,
     vaultV2s: [],
     vaultV2Adapters: [],
     block: block
@@ -322,10 +347,10 @@ export const useVaultSimulationState = (
     error: errorMessage,
     bundler,
     config: {
-      users,
-      tokens,
-      vaults,
-      marketIds,
+      users: safeUsers,
+      tokens: safeTokens,
+      vaults: safeVaults,
+      marketIds: safeMarketIds,
     },
   };
 };
