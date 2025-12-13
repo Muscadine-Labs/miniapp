@@ -6,6 +6,7 @@ import { base } from "wagmi/chains";
 import { OnchainKitProvider } from "@coinbase/onchainkit";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { wagmiConfig } from "./lib/wagmi";
+import { TransactionModalProvider } from "./contexts/TransactionModalContext";
 import "@coinbase/onchainkit/styles.css";
 
 const queryClient = new QueryClient({
@@ -73,7 +74,9 @@ export function RootProvider({ children }: { children: ReactNode }) {
             autoConnect: true,
           }}
         >
-          {children}
+          <TransactionModalProvider>
+            {children}
+          </TransactionModalProvider>
         </OnchainKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

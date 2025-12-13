@@ -1,9 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId, useSwitchChain } from 'wagmi';
+import { useAccount, useReadContract, useChainId, useSwitchChain, useWaitForTransactionReceipt } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { formatUnits, parseUnits, Address, erc4626Abi } from 'viem';
+import { formatUnits, Address, erc4626Abi } from 'viem';
 import { useMorphoVaultV2 } from '../hooks/useMorphoVaultV2';
+import { useVaultTransactions, type TransactionProgressStep } from '../hooks/useVaultTransactions';
+import { useTransactionModal } from '../contexts/TransactionModalContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface V2VaultEarnProps {
   vaultAddress: Address;
@@ -13,12 +16,17 @@ interface V2VaultEarnProps {
 export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps) {
   const [amount, setAmount] = useState('');
   const [isDeposit, setIsDeposit] = useState(true);
+  const [txProgress, setTxProgress] = useState<TransactionProgressStep | null>(null);
+  const [currentTxHash, setCurrentTxHash] = useState<string | null>(null);
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const isOnBase = chainId === base.id;
+  const queryClient = useQueryClient();
+  const { openTransactionModal, updateTransactionStatus } = useTransactionModal();
   
   const vaultData = useMorphoVaultV2(vaultAddress, recipientAddress);
+  const { executeVaultAction, isLoading: isTxLoading, error: txError } = useVaultTransactions(vaultAddress);
   
   // Get asset address from vault (Base chain)
   const { data: assetAddress } = useReadContract({
@@ -76,41 +84,27 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     ? parseFloat(formatUnits(assetBalance, decimals))
     : null;
 
-  // Check allowance for deposits
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: assetAddress,
-    abi: [
-      {
-        name: 'allowance',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'spender', type: 'address' },
-        ],
-        outputs: [{ name: '', type: 'uint256' }],
-      },
-    ],
-    functionName: 'allowance',
-    args: recipientAddress && vaultAddress ? [recipientAddress, vaultAddress] : undefined,
-    chainId: base.id,
+  // Watch for transaction confirmation
+  const { isLoading: isConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash: currentTxHash as `0x${string}` | undefined,
     query: {
-      enabled: !!assetAddress && !!recipientAddress && !!vaultAddress,
+      enabled: !!currentTxHash,
     },
   });
 
-  const needsApproval = React.useMemo(() => {
-    if (!isDeposit || !amount) return false;
-    if (allowance === undefined) return true;
-    try {
-      const amountNum = parseFloat(amount);
-      if (isNaN(amountNum) || amountNum <= 0) return false;
-      const amountWei = parseUnits(amount, decimals);
-      return amountWei > allowance;
-    } catch {
-      return false;
+  // Refetch data when transactions complete
+  useEffect(() => {
+    if (isTxSuccess && currentTxHash) {
+      // Refetch balances after successful transaction
+      refetchAssetBalance();
+      queryClient.invalidateQueries();
+      // Reset amount after successful transaction
+      setAmount('');
+      setCurrentTxHash(null);
+      setTxProgress(null);
+      updateTransactionStatus('success', undefined, currentTxHash);
     }
-  }, [isDeposit, amount, allowance, decimals]);
+  }, [isTxSuccess, currentTxHash, refetchAssetBalance, queryClient, updateTransactionStatus]);
 
   // Helper to parse amount safely
   const parseAmount = (val: string): number => {
@@ -118,85 +112,35 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // Approve transaction (for deposits)
-  const { writeContract: approve, data: approveHash, isPending: isApproving, error: approveError } = useWriteContract();
-  const { isLoading: isApprovingConfirming, isSuccess: isApproved } = useWaitForTransactionReceipt({
-    hash: approveHash,
-  });
-
-  // Deposit/Withdraw transaction
-  const { writeContract: depositOrWithdraw, data: txHash, isPending: isPendingTx, error: txError } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
-
-  // Refetch data when transactions complete
-  useEffect(() => {
-    if (isApproved) {
-      // Refetch allowance after approval
-      refetchAllowance();
-    }
-  }, [isApproved, refetchAllowance]);
-
-  useEffect(() => {
-    if (isTxSuccess) {
-      // Refetch balances and allowance after deposit/withdraw
-      refetchAssetBalance();
-      refetchAllowance();
-      // Reset amount after successful transaction
-      setAmount('');
-    }
-  }, [isTxSuccess, refetchAssetBalance, refetchAllowance]);
-
-  const handleApprove = async () => {
-    if (!assetAddress || !amount || !recipientAddress) return;
-    
-    try {
-      const amountWei = parseUnits(amount, decimals);
-      approve({
-        address: assetAddress,
-        abi: [
-          {
-            name: 'approve',
-            type: 'function',
-            stateMutability: 'nonpayable',
-            inputs: [
-              { name: 'spender', type: 'address' },
-              { name: 'amount', type: 'uint256' },
-            ],
-            outputs: [{ name: '', type: 'bool' }],
-          },
-        ],
-        functionName: 'approve',
-        args: [vaultAddress, amountWei],
-        chainId: base.id,
-      });
-    } catch (error) {
-      console.error('Approve error:', error);
-    }
-  };
-
   const handleDeposit = async () => {
     if (!amount || !recipientAddress || !assetAddress) return;
     if (!isOnBase) return;
     
-    // Don't proceed if approval is needed - user must approve first via the approve button
-    // The UI already shows the approve button when needsApproval is true
-    if (needsApproval) {
-      console.warn('Approval required before deposit');
-      return;
-    }
-    
     try {
-      const amountWei = parseUnits(amount, decimals);
-      depositOrWithdraw({
-        address: vaultAddress,
-        abi: erc4626Abi,
-        functionName: 'deposit',
-        args: [amountWei, recipientAddress],
-        chainId: base.id,
-      });
+      // Open transaction modal for better UX
+      openTransactionModal('deposit', vaultAddress, 'Vault', 'TOKEN', amount);
+      updateTransactionStatus('confirming');
+      
+      // Progress callback for transaction steps
+      const onProgress = (step: TransactionProgressStep) => {
+        setTxProgress(step);
+        if (step.type === 'confirming' && step.txHash) {
+          setCurrentTxHash(step.txHash);
+          updateTransactionStatus('confirming', undefined, step.txHash);
+        } else if (step.type === 'signing') {
+          updateTransactionStatus('signing');
+        } else if (step.type === 'approving') {
+          updateTransactionStatus('approving');
+        }
+      };
+
+      const txHash = await executeVaultAction('deposit', vaultAddress, amount, onProgress);
+      setCurrentTxHash(txHash);
+      updateTransactionStatus('confirming', undefined, txHash);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+      updateTransactionStatus('error', errorMessage);
+      setTxProgress(null);
       console.error('Deposit error:', error);
     }
   };
@@ -206,15 +150,30 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     if (!isOnBase) return;
     
     try {
-      const amountWei = parseUnits(amount, decimals);
-      depositOrWithdraw({
-        address: vaultAddress,
-        abi: erc4626Abi,
-        functionName: 'withdraw',
-        args: [amountWei, recipientAddress, recipientAddress],
-        chainId: base.id,
-      });
+      // Open transaction modal for better UX
+      openTransactionModal('withdraw', vaultAddress, 'Vault', 'TOKEN', amount);
+      updateTransactionStatus('confirming');
+      
+      // Progress callback for transaction steps
+      const onProgress = (step: TransactionProgressStep) => {
+        setTxProgress(step);
+        if (step.type === 'confirming' && step.txHash) {
+          setCurrentTxHash(step.txHash);
+          updateTransactionStatus('confirming', undefined, step.txHash);
+        } else if (step.type === 'signing') {
+          updateTransactionStatus('signing');
+        } else if (step.type === 'approving') {
+          updateTransactionStatus('approving');
+        }
+      };
+
+      const txHash = await executeVaultAction('withdraw', vaultAddress, amount, onProgress);
+      setCurrentTxHash(txHash);
+      updateTransactionStatus('confirming', undefined, txHash);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+      updateTransactionStatus('error', errorMessage);
+      setTxProgress(null);
       console.error('Withdraw error:', error);
     }
   };
@@ -229,8 +188,24 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
     }
   };
 
-  // Only disable buttons/inputs when actively submitting transactions, not when refetching data
-  const isSubmitting = isPendingTx || isConfirming || isApproving || isApprovingConfirming || isSwitching;
+  // Determine loading/submitting state
+  const isSubmitting = isTxLoading || isConfirming || isSwitching;
+  
+  // Get status message from progress
+  const getStatusMessage = () => {
+    if (!txProgress) return null;
+    
+    if (txProgress.type === 'signing') {
+      return `Signing transaction... (${txProgress.stepIndex + 1}/${txProgress.totalSteps})`;
+    }
+    if (txProgress.type === 'approving') {
+      return `Approving... (${txProgress.stepIndex + 1}/${txProgress.totalSteps})`;
+    }
+    if (txProgress.type === 'confirming') {
+      return isConfirming ? 'Confirming transaction...' : 'Transaction confirmed!';
+    }
+    return null;
+  };
 
   if (!isConnected) {
     return (
@@ -313,7 +288,7 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
             step="0.000001"
             min="0"
             className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          disabled={isSubmitting || !isOnBase}
+            disabled={isSubmitting || !isOnBase}
           />
           <button
             onClick={handleMax}
@@ -326,68 +301,78 @@ export function V2VaultEarn({ vaultAddress, recipientAddress }: V2VaultEarnProps
 
         {/* Action Button */}
         {isDeposit ? (
-          needsApproval && !isApproved ? (
-            <button
-              onClick={handleApprove}
-              disabled={
-                !amount || 
-                parseAmount(amount) <= 0 || 
-                isSubmitting || 
-                (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount))
-              }
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isApproving || isApprovingConfirming ? 'Approving...' : 'Approve'}
-            </button>
-          ) : (
-            <button
-              onClick={handleDeposit}
-              disabled={
-                !amount || 
-                parseAmount(amount) <= 0 || 
-                isSubmitting || 
-                !isOnBase ||
-                (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount)) || 
-                needsApproval
-              }
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isPendingTx || isConfirming ? 'Processing...' : 'Deposit'}
-            </button>
-          )
+          <button
+            onClick={handleDeposit}
+            disabled={
+              !amount || 
+              parseAmount(amount) <= 0 || 
+              isSubmitting || 
+              !isOnBase ||
+              (assetBalanceFormatted !== null && assetBalanceFormatted < parseAmount(amount))
+            }
+            className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (getStatusMessage() || 'Processing...') : 'Deposit'}
+          </button>
         ) : (
           <button
             onClick={handleWithdraw}
             disabled={
-                !amount || 
-                parseAmount(amount) <= 0 || 
-                isSubmitting || 
-                !isOnBase ||
-                balance < parseAmount(amount)
+              !amount || 
+              parseAmount(amount) <= 0 || 
+              isSubmitting || 
+              !isOnBase ||
+              balance < parseAmount(amount)
             }
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isPendingTx || isConfirming ? 'Processing...' : 'Withdraw'}
+            {isSubmitting ? (getStatusMessage() || 'Processing...') : 'Withdraw'}
           </button>
         )}
       </div>
 
       {/* Transaction Status */}
-      {txHash && (
+      {currentTxHash && (
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-800">
             Transaction submitted! {isConfirming ? 'Confirming...' : 'Confirmed'}
           </p>
+          {currentTxHash && (
+            <a
+              href={`https://basescan.org/tx/${currentTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-green-600 hover:text-green-700 underline mt-1 block"
+            >
+              View on BaseScan
+            </a>
+          )}
         </div>
       )}
-      {(approveError || txError) && (
+      {txError && (
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
           <p className="text-sm text-rose-800 break-words">
-            {(approveError ?? txError)?.message}
+            {txError}
           </p>
+        </div>
+      )}
+      {txProgress && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            {getStatusMessage()}
+          </p>
+          {txProgress.type === 'approving' && txProgress.txHash && (
+            <a
+              href={`https://basescan.org/tx/${txProgress.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:text-blue-700 underline mt-1 block"
+            >
+              View approval on BaseScan
+            </a>
+          )}
         </div>
       )}
     </div>
   );
 }
-
