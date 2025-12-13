@@ -53,7 +53,7 @@
     "jsdom": "^25.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
+    "typescript": "5.8.3",
     "vitest": "^2.1.9"
   },
   "overrides": {
@@ -74,6 +74,9 @@
     "@morpho-org/simulation-sdk-wagmi": {
       "react": "^19.0.0",
       "react-dom": "^19.0.0"
+    },
+    "@farcaster/quick-auth": {
+      "typescript": "5.8.3"
     }
   }
 }
